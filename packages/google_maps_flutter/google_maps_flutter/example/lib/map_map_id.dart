@@ -49,18 +49,7 @@ class MapIdBodyState extends State<MapIdBody> {
     super.initState();
   }
 
-  String _getInitializedsRendererType() {
-    switch (_initializedRenderer) {
-      case AndroidMapRenderer.latest:
-        return 'latest';
-      case AndroidMapRenderer.legacy:
-        return 'legacy';
-      case AndroidMapRenderer.platformDefault:
-      case null:
-        break;
-    }
-    return 'unknown';
-  }
+  
 
   void _setMapId() {
     setState(() {

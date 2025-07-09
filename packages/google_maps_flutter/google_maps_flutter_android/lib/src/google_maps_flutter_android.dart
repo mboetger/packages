@@ -52,6 +52,8 @@ enum AndroidMapRenderer {
   latest,
 
   /// Legacy renderer type.
+  @Deprecated(
+      'The legacy renderer is no longer supported. This will be removed in a future release.')
   legacy,
 
   /// Requests the default map renderer type.
@@ -506,10 +508,7 @@ class GoogleMapsFlutterAndroid extends GoogleMapsFlutterPlatform {
   /// Currently defaults to false, but the default is subject to change.
   bool useAndroidViewSurface = false;
 
-  /// Requests Google Map Renderer with [AndroidMapRenderer] type.
-  ///
-  /// See https://pub.dev/packages/google_maps_flutter_android#map-renderer
-  /// for more information.
+  /// Requests the Google Maps SDK to be initialized.
   ///
   /// The renderer must be requested before creating GoogleMap instances as the
   /// renderer can be initialized only once per application context.
@@ -518,25 +517,14 @@ class GoogleMapsFlutterAndroid extends GoogleMapsFlutterPlatform {
   /// The returned [Future] completes after renderer has been initialized.
   /// Initialized [AndroidMapRenderer] type is returned.
   Future<AndroidMapRenderer> initializeWithRenderer(
+      // This parameter is ignored. The legacy renderer is no longer available.
       AndroidMapRenderer? rendererType) async {
-    PlatformRendererType? preferredRenderer;
-    switch (rendererType) {
-      case AndroidMapRenderer.latest:
-        preferredRenderer = PlatformRendererType.latest;
-      case AndroidMapRenderer.legacy:
-        preferredRenderer = PlatformRendererType.legacy;
-      case AndroidMapRenderer.platformDefault:
-      case null:
-        preferredRenderer = null;
-    }
-
     final MapsInitializerApi hostApi = MapsInitializerApi();
     final PlatformRendererType initializedRenderer =
-        await hostApi.initializeWithPreferredRenderer(preferredRenderer);
+        await hostApi.initializeWithPreferredRenderer(null);
 
     return switch (initializedRenderer) {
       PlatformRendererType.latest => AndroidMapRenderer.latest,
-      PlatformRendererType.legacy => AndroidMapRenderer.legacy,
     };
   }
 

@@ -21,7 +21,7 @@ enum PlatformMapType {
 }
 
 // Pigeon equivalent of the Java MapsInitializer.Renderer.
-enum PlatformRendererType { legacy, latest }
+enum PlatformRendererType { latest }
 
 /// Pigeon representatation of a CameraPosition.
 class PlatformCameraPosition {

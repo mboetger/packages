@@ -27,7 +27,6 @@ final class GoogleMapInitializer
 
   @Override
   public void initializeWithPreferredRenderer(
-      @Nullable Messages.PlatformRendererType type,
       @NonNull Messages.Result<Messages.PlatformRendererType> result) {
     if (rendererInitialized || initializationResult != null) {
       result.error(
@@ -37,7 +36,7 @@ final class GoogleMapInitializer
               null));
     } else {
       initializationResult = result;
-      initializeWithRendererRequest(Convert.toMapRendererType(type));
+      initializeWithRendererRequest(null);
     }
   }
 
@@ -60,9 +59,6 @@ final class GoogleMapInitializer
       switch (renderer) {
         case LATEST:
           initializationResult.success(Messages.PlatformRendererType.LATEST);
-          break;
-        case LEGACY:
-          initializationResult.success(Messages.PlatformRendererType.LEGACY);
           break;
         default:
           initializationResult.error(
