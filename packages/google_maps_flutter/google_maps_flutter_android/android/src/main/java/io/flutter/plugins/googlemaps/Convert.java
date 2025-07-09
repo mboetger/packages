@@ -360,19 +360,7 @@ class Convert {
     return MAP_TYPE_NORMAL;
   }
 
-  static @Nullable MapsInitializer.Renderer toMapRendererType(
-      @Nullable Messages.PlatformRendererType type) {
-    if (type == null) {
-      return null;
-    }
-    switch (type) {
-      case LATEST:
-        return MapsInitializer.Renderer.LATEST;
-      case LEGACY:
-        return MapsInitializer.Renderer.LEGACY;
-    }
-    return null;
-  }
+  
 
   static @NonNull Messages.PlatformCameraPosition cameraPositionToPigeon(
       @NonNull CameraPosition position) {

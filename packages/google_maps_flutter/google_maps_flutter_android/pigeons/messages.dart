@@ -20,8 +20,7 @@ enum PlatformMapType {
   hybrid,
 }
 
-// Pigeon equivalent of the Java MapsInitializer.Renderer.
-enum PlatformRendererType { legacy, latest }
+
 
 /// Pigeon representatation of a CameraPosition.
 class PlatformCameraPosition {
@@ -777,15 +776,12 @@ abstract class MapsCallbackApi {
 /// Interface for global SDK initialization.
 @HostApi()
 abstract class MapsInitializerApi {
-  /// Initializes the Google Maps SDK with the given renderer preference.
-  ///
-  /// A null renderer preference will result in the default renderer.
+  /// Initializes the Google Maps SDK.
   ///
   /// Calling this more than once in the lifetime of an application will result
   /// in an error.
   @async
-  PlatformRendererType initializeWithPreferredRenderer(
-      PlatformRendererType? type);
+  void initialize();
 }
 
 /// Dummy interface to force generation of the platform view creation params,

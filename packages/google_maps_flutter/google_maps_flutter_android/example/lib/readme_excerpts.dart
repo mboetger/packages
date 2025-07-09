@@ -30,32 +30,4 @@ class MyApp extends StatefulWidget {
   State<MyApp> createState() => _MyAppState();
 }
 
-class _MyAppState extends State<MyApp> {
-  // #docregion MapRenderer
-  AndroidMapRenderer mapRenderer = AndroidMapRenderer.platformDefault;
-  // #enddocregion MapRenderer
 
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      home: Scaffold(
-        appBar: AppBar(
-          title: const Text('README snippet app'),
-        ),
-        body: const Text('See example in main.dart'),
-      ),
-    );
-  }
-
-  Future<void> initializeLatestMapRenderer() async {
-    // #docregion MapRenderer
-    final GoogleMapsFlutterPlatform mapsImplementation =
-        GoogleMapsFlutterPlatform.instance;
-    if (mapsImplementation is GoogleMapsFlutterAndroid) {
-      WidgetsFlutterBinding.ensureInitialized();
-      mapRenderer = await mapsImplementation
-          .initializeWithRenderer(AndroidMapRenderer.latest);
-    }
-    // #enddocregion MapRenderer
-  }
-}

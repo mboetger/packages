@@ -45,18 +45,7 @@ class UnknownMapIDError extends Error {
   }
 }
 
-/// The possible android map renderer types that can be
-/// requested from the native Google Maps SDK.
-enum AndroidMapRenderer {
-  /// Latest renderer type.
-  latest,
 
-  /// Legacy renderer type.
-  legacy,
-
-  /// Requests the default map renderer type.
-  platformDefault,
-}
 
 /// An implementation of [GoogleMapsFlutterPlatform] for Android.
 class GoogleMapsFlutterAndroid extends GoogleMapsFlutterPlatform {
@@ -506,38 +495,12 @@ class GoogleMapsFlutterAndroid extends GoogleMapsFlutterPlatform {
   /// Currently defaults to false, but the default is subject to change.
   bool useAndroidViewSurface = false;
 
-  /// Requests Google Map Renderer with [AndroidMapRenderer] type.
+  /// Initializes the Google Maps SDK on Android.
   ///
-  /// See https://pub.dev/packages/google_maps_flutter_android#map-renderer
-  /// for more information.
-  ///
-  /// The renderer must be requested before creating GoogleMap instances as the
-  /// renderer can be initialized only once per application context.
-  /// Throws a [PlatformException] if method is called multiple times.
-  ///
-  /// The returned [Future] completes after renderer has been initialized.
-  /// Initialized [AndroidMapRenderer] type is returned.
-  Future<AndroidMapRenderer> initializeWithRenderer(
-      AndroidMapRenderer? rendererType) async {
-    PlatformRendererType? preferredRenderer;
-    switch (rendererType) {
-      case AndroidMapRenderer.latest:
-        preferredRenderer = PlatformRendererType.latest;
-      case AndroidMapRenderer.legacy:
-        preferredRenderer = PlatformRendererType.legacy;
-      case AndroidMapRenderer.platformDefault:
-      case null:
-        preferredRenderer = null;
-    }
-
+  /// The SDK must be initialized before creating any GoogleMap instances.
+  Future<void> initialize() {
     final MapsInitializerApi hostApi = MapsInitializerApi();
-    final PlatformRendererType initializedRenderer =
-        await hostApi.initializeWithPreferredRenderer(preferredRenderer);
-
-    return switch (initializedRenderer) {
-      PlatformRendererType.latest => AndroidMapRenderer.latest,
-      PlatformRendererType.legacy => AndroidMapRenderer.legacy,
-    };
+    return hostApi.initialize();
   }
 
   Widget _buildView(
@@ -1439,18 +1402,7 @@ class _TileOverlayUpdates extends MapsObjectUpdates<TileOverlay> {
   Set<TileOverlay> get tileOverlaysToChange => objectsToChange;
 }
 
-/// Thrown to indicate that a platform interaction failed to initialize renderer.
-class AndroidMapRendererException implements Exception {
-  /// Creates a [AndroidMapRendererException] with an optional human-readable
-  /// error message.
-  AndroidMapRendererException([this.message]);
 
-  /// A human-readable error message, possibly null.
-  final String? message;
-
-  @override
-  String toString() => 'AndroidMapRendererException($message)';
-}
 
 /// The error message to use for style failures. Unlike iOS, Android does not
 /// provide an API to get style failure information, it's just logged to the
