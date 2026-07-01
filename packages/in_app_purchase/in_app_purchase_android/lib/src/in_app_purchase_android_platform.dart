@@ -203,6 +203,14 @@ class InAppPurchaseAndroidPlatform extends InAppPurchasePlatform {
     );
   }
 
+  /// Restores all previous purchases.
+  ///
+  /// WARNING: Refunded or revoked purchases may still be returned by this method
+  /// due to caching by the Google Play Store app (which can take up to 24 hours
+  /// to update). Therefore, client-side APIs cannot be solely relied upon to
+  /// verify the current validity of a purchase. It is highly recommended to use
+  /// Server-Side Verification (e.g., the Google Play Developer API / Voided Purchases
+  /// API) to reliably verify purchase status.
   @override
   Future<void> restorePurchases({String? applicationUserName}) async {
     List<PurchasesResultWrapper> responses;

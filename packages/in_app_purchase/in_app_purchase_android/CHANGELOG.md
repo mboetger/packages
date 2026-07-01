@@ -1,3 +1,7 @@
+## 0.5.2
+
+* Document Android client-side caching behavior for refunded/revoked purchases.
+
 ## 0.5.1
 
 * Adds support to overlay billing related messages. See `InAppPurchaseAndroidPlatformAddition.showInAppMessages`.

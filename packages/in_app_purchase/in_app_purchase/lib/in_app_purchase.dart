@@ -203,6 +203,13 @@ class InAppPurchase implements InAppPurchasePlatformAdditionProvider {
   /// consumable products, you need to persist consumable product information
   /// for your user on your own server.
   ///
+  /// WARNING: On Android, refunded or revoked purchases may still be returned
+  /// by the client-side API due to caching by the Google Play Store app (which can
+  /// take up to 24 hours to update). Therefore, client-side APIs cannot be
+  /// solely relied upon to verify the current validity of a purchase. It is
+  /// highly recommended to use Server-Side Verification (e.g., the Google Play
+  /// Developer API / Voided Purchases API) to reliably verify purchase status.
+  ///
   /// See also:
   ///
   ///  * [refreshPurchaseVerificationData], for reloading failed

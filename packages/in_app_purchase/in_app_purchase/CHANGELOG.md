@@ -1,3 +1,7 @@
+## 3.3.1
+
+* Document Android client-side caching behavior for refunded/revoked purchases.
+
 ## 3.3.0
 
 * Updates `in_app_purchase_android` dependency to `^0.5.0`.

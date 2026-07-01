@@ -174,6 +174,8 @@ underlying store:
 await InAppPurchase.instance.restorePurchases();
 ```
 
+> **Warning:** On Android, refunded or revoked purchases may still be returned by `restorePurchases` (and `queryPastPurchases` in `in_app_purchase_android`) for up to 24 hours due to caching by the Google Play Store. Client-side APIs cannot be solely relied upon to verify the current validity of a purchase. It is highly recommended to use Server-Side Verification (e.g., the Google Play Developer API / Voided Purchases API) to reliably verify purchase status.
+
 Note that the App Store does not have any APIs for querying consumable
 products, and Google Play considers consumable products to no longer be owned
 once they're marked as consumed and fails to return them here. For restoring
