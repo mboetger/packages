@@ -12,17 +12,20 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import android.Manifest;
 import android.content.Context;
 import androidx.activity.ComponentActivity;
 import androidx.test.core.app.ApplicationProvider;
 import com.google.android.gms.maps.CameraUpdate;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
+import com.google.android.gms.maps.UiSettings;
 import com.google.android.gms.maps.model.CameraPosition;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MapCapabilities;
@@ -41,6 +44,10 @@ import org.mockito.MockedStatic;
 import org.mockito.MockitoAnnotations;
 import org.robolectric.Robolectric;
 import org.robolectric.RobolectricTestRunner;
+import org.robolectric.Shadows;
+import org.robolectric.annotation.Config;
+
+import static org.mockito.ArgumentMatchers.anyBoolean;
 
 @RunWith(RobolectricTestRunner.class)
 public class GoogleMapControllerTest {
@@ -358,5 +365,49 @@ public class GoogleMapControllerTest {
     final List<PlatformWeightedLatLng> heatmapData =
         List.of(new PlatformWeightedLatLng(new PlatformLatLng(1.1, 2.2), 3.3));
     return new PlatformHeatmap(id, heatmapData, null, /* opacity */ 1.0, /* radius */ 20, null);
+  }
+
+  @Test
+  public void setMyLocationEnabled_whenPermissionGrantedLater_enablesMyLocation() {
+    GoogleMapController googleMapController = getGoogleMapController();
+    UiSettings mockUiSettings = mock(UiSettings.class);
+    when(mockGoogleMap.getUiSettings()).thenReturn(mockUiSettings);
+
+    // 1. Enable my location when permission is not granted.
+    googleMapController.setMyLocationEnabled(true);
+
+    // 2. Map becomes ready, it should not enable my location on the map.
+    googleMapController.onMapReady(mockGoogleMap);
+    verify(mockGoogleMap, never()).setMyLocationEnabled(anyBoolean());
+
+    // 3. Grant the permission.
+    Shadows.shadowOf((android.app.Application) context)
+        .grantPermissions(Manifest.permission.ACCESS_FINE_LOCATION);
+
+    // 4. Try to enable it again.
+    googleMapController.setMyLocationEnabled(true);
+
+    // 5. Verify that it is NOW enabled on the map (should fail before fix, pass after fix).
+    verify(mockGoogleMap, times(1)).setMyLocationEnabled(true);
+  }
+
+  @Test
+  public void onResume_updatesMyLocationSettings() {
+    GoogleMapController googleMapController = getGoogleMapController();
+    UiSettings mockUiSettings = mock(UiSettings.class);
+    when(mockGoogleMap.getUiSettings()).thenReturn(mockUiSettings);
+
+    googleMapController.setMyLocationEnabled(true);
+    googleMapController.onMapReady(mockGoogleMap);
+
+    // Grant permission.
+    Shadows.shadowOf((android.app.Application) context)
+        .grantPermissions(Manifest.permission.ACCESS_FINE_LOCATION);
+
+    // Call onResume.
+    googleMapController.onResume(activity);
+
+    // Verify that it is enabled on the map.
+    verify(mockGoogleMap, times(1)).setMyLocationEnabled(true);
   }
 }

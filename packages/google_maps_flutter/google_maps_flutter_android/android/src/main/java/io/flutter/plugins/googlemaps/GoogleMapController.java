@@ -491,10 +491,11 @@ class GoogleMapController
 
   @Override
   public void onResume(@NonNull LifecycleOwner owner) {
-    if (disposed) {
+    if (disposed || mapView == null) {
       return;
     }
     mapView.onResume();
+    updateMyLocationSettings();
   }
 
   @Override
@@ -630,24 +631,14 @@ class GoogleMapController
 
   @Override
   public void setMyLocationEnabled(boolean myLocationEnabled) {
-    if (this.myLocationEnabled == myLocationEnabled) {
-      return;
-    }
     this.myLocationEnabled = myLocationEnabled;
-    if (googleMap != null) {
-      updateMyLocationSettings();
-    }
+    updateMyLocationSettings();
   }
 
   @Override
   public void setMyLocationButtonEnabled(boolean myLocationButtonEnabled) {
-    if (this.myLocationButtonEnabled == myLocationButtonEnabled) {
-      return;
-    }
     this.myLocationButtonEnabled = myLocationButtonEnabled;
-    if (googleMap != null) {
-      updateMyLocationSettings();
-    }
+    updateMyLocationSettings();
   }
 
   @Override
@@ -776,6 +767,9 @@ class GoogleMapController
 
   @SuppressLint("MissingPermission")
   private void updateMyLocationSettings() {
+    if (googleMap == null) {
+      return;
+    }
     if (hasLocationPermission()) {
       // The plugin doesn't add the location permission by default so that apps that don't need
       // the feature won't require the permission.
