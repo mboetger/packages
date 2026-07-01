@@ -14,12 +14,16 @@ import android.content.res.AssetManager;
 import android.graphics.Bitmap;
 import android.graphics.Point;
 import android.graphics.SurfaceTexture;
+import android.graphics.Typeface;
 import android.os.Bundle;
 import android.util.Log;
+import android.util.TypedValue;
 import android.view.TextureView;
 import android.view.TextureView.SurfaceTextureListener;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.LinearLayout;
+import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.VisibleForTesting;
@@ -214,6 +218,7 @@ class GoogleMapController
     markerManager = new MarkerManager(googleMap);
     markerCollection = markerManager.newCollection();
     updateMyLocationSettings();
+    markerCollection.setInfoWindowAdapter(new DefaultInfoWindowAdapter(context, density));
     markersController.setCollection(markerCollection);
     clusterManagersController.init(googleMap, markerManager);
     polygonsController.setGoogleMap(googleMap);
@@ -400,6 +405,9 @@ class GoogleMapController
     MapsInspectorApi.Companion.setUp(binaryMessenger, null, Integer.toString(id));
     setGoogleMapListener(null);
     setMarkerCollectionListener(null);
+    if (markerCollection != null) {
+      markerCollection.setInfoWindowAdapter(null);
+    }
     setClusterItemClickListener(null);
     setClusterItemInfoWindowClickListener(null);
     setClusterItemRenderedListener(null);
@@ -1189,5 +1197,71 @@ class GoogleMapController
       data.add(clusterToPigeon(clusterManagerId, cluster));
     }
     return data;
+  }
+
+  /**
+   * Default InfoWindowAdapter that mimics the default Google Maps InfoWindow
+   * but allows multiline snippets.
+   */
+  @VisibleForTesting
+  static class DefaultInfoWindowAdapter implements GoogleMap.InfoWindowAdapter {
+    private final Context context;
+    private final float density;
+
+    DefaultInfoWindowAdapter(@NonNull Context context, float density) {
+      this.context = context;
+      this.density = density;
+    }
+
+    @Nullable
+    @Override
+    public View getInfoWindow(@NonNull Marker marker) {
+      return null;
+    }
+
+    @Nullable
+    @Override
+    public View getInfoContents(@NonNull Marker marker) {
+      String title = marker.getTitle();
+      String snippet = marker.getSnippet();
+
+      if (title == null && snippet == null) {
+        return null;
+      }
+
+      LinearLayout layout = new LinearLayout(context);
+      layout.setOrientation(LinearLayout.VERTICAL);
+
+      int paddingHorizontal = (int) (12 * density);
+      int paddingVertical = (int) (8 * density);
+      layout.setPadding(paddingHorizontal, paddingVertical, paddingHorizontal, paddingVertical);
+
+      if (title != null) {
+        TextView titleView = new TextView(context);
+        titleView.setText(title);
+        titleView.setTextColor(0xFF000000); // Black
+        titleView.setTypeface(null, Typeface.BOLD);
+        titleView.setTextSize(TypedValue.COMPLEX_UNIT_SP, 14);
+        layout.addView(titleView);
+      }
+
+      if (snippet != null) {
+        TextView snippetView = new TextView(context);
+        snippetView.setText(snippet);
+        snippetView.setTextColor(0xFF666666); // Gray
+        snippetView.setTextSize(TypedValue.COMPLEX_UNIT_SP, 12);
+        snippetView.setMaxLines(Integer.MAX_VALUE);
+        if (title != null) {
+          LinearLayout.LayoutParams params =
+              new LinearLayout.LayoutParams(
+                  LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+          params.topMargin = (int) (2 * density);
+          snippetView.setLayoutParams(params);
+        }
+        layout.addView(snippetView);
+      }
+
+      return layout;
+    }
   }
 }
