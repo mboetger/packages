@@ -11,16 +11,20 @@ import androidx.media3.common.VideoSize;
 import androidx.media3.exoplayer.ExoPlayer;
 import io.flutter.plugins.videoplayer.ExoPlayerEventListener;
 import io.flutter.plugins.videoplayer.VideoPlayerCallbacks;
+import io.flutter.view.TextureRegistry.SurfaceProducer;
 import java.util.Objects;
 
 public final class TextureExoPlayerEventListener extends ExoPlayerEventListener {
   private final boolean surfaceProducerHandlesCropAndRotation;
+  private final SurfaceProducer surfaceProducer;
 
   public TextureExoPlayerEventListener(
       @NonNull ExoPlayer exoPlayer,
       @NonNull VideoPlayerCallbacks events,
+      @NonNull SurfaceProducer surfaceProducer,
       boolean surfaceProducerHandlesCropAndRotation) {
     super(exoPlayer, events);
+    this.surfaceProducer = surfaceProducer;
     this.surfaceProducerHandlesCropAndRotation = surfaceProducerHandlesCropAndRotation;
   }
 
@@ -58,5 +62,12 @@ public final class TextureExoPlayerEventListener extends ExoPlayerEventListener 
   private int getRotationCorrectionFromFormat(ExoPlayer exoPlayer) {
     Format videoFormat = Objects.requireNonNull(exoPlayer.getVideoFormat());
     return videoFormat.rotationDegrees;
+  }
+
+  @Override
+  public void onVideoSizeChanged(@NonNull VideoSize videoSize) {
+    if (videoSize.width > 0 && videoSize.height > 0) {
+      surfaceProducer.setSize(videoSize.width, videoSize.height);
+    }
   }
 }

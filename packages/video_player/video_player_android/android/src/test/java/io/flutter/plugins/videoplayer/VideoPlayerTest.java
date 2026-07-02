@@ -25,6 +25,7 @@ import androidx.media3.common.TrackGroup;
 import androidx.media3.common.TrackSelectionOverride;
 import androidx.media3.common.Tracks;
 import androidx.media3.exoplayer.ExoPlayer;
+import androidx.media3.exoplayer.SeekParameters;
 import androidx.media3.exoplayer.trackselection.DefaultTrackSelector;
 import com.google.common.collect.ImmutableList;
 import io.flutter.plugins.videoplayer.platformview.PlatformViewExoPlayerEventListener;
@@ -186,6 +187,50 @@ public final class VideoPlayerTest {
     videoPlayer.seekTo(10L);
     verify(mockExoPlayer).seekTo(10);
 
+    videoPlayer.dispose();
+  }
+
+  @Test
+  public void seekTo_whenPlaying_seeksExactlyWithoutDebounce() {
+    VideoPlayer videoPlayer = createVideoPlayer();
+    when(mockExoPlayer.getPlayWhenReady()).thenReturn(true);
+
+    videoPlayer.seekTo(10L);
+
+    verify(mockExoPlayer).setSeekParameters(SeekParameters.EXACT);
+    verify(mockExoPlayer).seekTo(10L);
+    videoPlayer.dispose();
+  }
+
+  @Test
+  public void seekTo_whenPausedAndRapid_debouncesSeeks() {
+    // Advance clock so the first seek is not considered rapid (uptimeMillis - 0 >= 200)
+    org.robolectric.shadows.ShadowSystemClock.advanceBy(java.time.Duration.ofMillis(1000));
+
+    VideoPlayer videoPlayer = createVideoPlayer();
+    when(mockExoPlayer.getPlayWhenReady()).thenReturn(false);
+
+    // First seek (not rapid because lastSeekTime is 0, and uptimeMillis is 1000)
+    videoPlayer.seekTo(10L);
+    verify(mockExoPlayer).setSeekParameters(SeekParameters.EXACT);
+    verify(mockExoPlayer).seekTo(10L);
+
+    // Second seek (rapid, time has not progressed)
+    videoPlayer.seekTo(20L);
+    verify(mockExoPlayer).setSeekParameters(SeekParameters.CLOSEST_SYNC);
+    verify(mockExoPlayer).seekTo(20L);
+
+    // Third seek (rapid)
+    videoPlayer.seekTo(30L);
+    verify(mockExoPlayer).seekTo(30L);
+
+    // Progress time by 200ms to trigger the pending exact seek
+    org.robolectric.shadows.ShadowLooper.idleMainLooper(200, java.util.concurrent.TimeUnit.MILLISECONDS);
+
+    // Verify that the final exact seek was performed
+    verify(mockExoPlayer, times(2)).setSeekParameters(SeekParameters.EXACT); // First one, and the final one
+    verify(mockExoPlayer, times(2)).seekTo(30L); // One with CLOSEST_SYNC, one with EXACT
+    
     videoPlayer.dispose();
   }
 

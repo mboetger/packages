@@ -9,7 +9,9 @@ import static androidx.media3.common.Player.REPEAT_MODE_OFF;
 
 import android.os.Handler;
 import android.os.Looper;
+import android.os.SystemClock;
 import androidx.annotation.NonNull;
+import androidx.media3.exoplayer.SeekParameters;
 import androidx.annotation.Nullable;
 import androidx.media3.common.AudioAttributes;
 import androidx.media3.common.C;
@@ -41,6 +43,11 @@ public abstract class VideoPlayer implements VideoPlayerInstanceApi {
 
   private final Handler mainHandler = new Handler(Looper.getMainLooper());
   private boolean isDisposed = false;
+
+  private static final long SCRUBBING_DEBOUNCE_MS = 200;
+  private Runnable pendingExactSeekRunnable;
+  private long lastSeekTime = 0;
+  private boolean isScrubbing = false;
 
   /** A closure-compatible signature since {@link java.util.function.Supplier} is API level 24. */
   public interface ExoPlayerProvider {
@@ -164,7 +171,42 @@ public abstract class VideoPlayer implements VideoPlayerInstanceApi {
 
   @Override
   public void seekTo(long position) {
-    exoPlayer.seekTo(position);
+    if (exoPlayer.getPlayWhenReady()) {
+      exoPlayer.setSeekParameters(SeekParameters.EXACT);
+      exoPlayer.seekTo(position);
+      return;
+    }
+
+    long currentTime = SystemClock.uptimeMillis();
+    long timeSinceLastSeek = currentTime - lastSeekTime;
+    lastSeekTime = currentTime;
+
+    if (pendingExactSeekRunnable != null) {
+      mainHandler.removeCallbacks(pendingExactSeekRunnable);
+      pendingExactSeekRunnable = null;
+    }
+
+    if (timeSinceLastSeek < SCRUBBING_DEBOUNCE_MS) {
+      if (!isScrubbing) {
+        isScrubbing = true;
+        exoPlayer.setSeekParameters(SeekParameters.CLOSEST_SYNC);
+      }
+      exoPlayer.seekTo(position);
+
+      final long finalPosition = position;
+      pendingExactSeekRunnable =
+          () -> {
+            isScrubbing = false;
+            exoPlayer.setSeekParameters(SeekParameters.EXACT);
+            exoPlayer.seekTo(finalPosition);
+            pendingExactSeekRunnable = null;
+          };
+      mainHandler.postDelayed(pendingExactSeekRunnable, SCRUBBING_DEBOUNCE_MS);
+    } else {
+      isScrubbing = false;
+      exoPlayer.setSeekParameters(SeekParameters.EXACT);
+      exoPlayer.seekTo(position);
+    }
   }
 
   @NonNull
