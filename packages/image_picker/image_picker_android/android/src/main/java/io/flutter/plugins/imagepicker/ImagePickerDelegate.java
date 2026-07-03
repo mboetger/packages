@@ -874,6 +874,7 @@ public class ImagePickerDelegate
     }
 
     // User cancelled taking a picture.
+    deletePendingCameraMediaFile();
     finishWithSuccess(null);
   }
 
@@ -890,6 +891,28 @@ public class ImagePickerDelegate
 
     // User cancelled taking a picture.
     finishWithSuccess(null);
+  }
+
+    deletePendingCameraMediaFile();
+    finishWithSuccess(null);
+  }
+
+  private void deletePendingCameraMediaFile() {
+    Uri uri = pendingCameraMediaUri;
+    if (uri != null) {
+      File file = new File(uri.getPath());
+      if (file.exists()) {
+        file.delete();
+      }
+    } else {
+      String cachedPath = cache.retrievePendingCameraMediaUriPath();
+      if (cachedPath != null && !cachedPath.isEmpty()) {
+        File file = new File(cachedPath);
+        if (file.exists()) {
+          file.delete();
+        }
+      }
+    }
   }
 
   void handleImageResult(String path, boolean shouldDeleteOriginalIfScaled) {

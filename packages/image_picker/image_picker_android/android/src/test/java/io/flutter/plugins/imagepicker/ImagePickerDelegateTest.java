@@ -790,6 +790,90 @@ public class ImagePickerDelegateTest {
   }
 
   @Test
+  public void onActivityResult_whenTakeImageWithCameraCanceled_deletesTemporaryFile() throws IOException {
+    Mockito.doAnswer(
+            invocation -> {
+              ((Runnable) invocation.getArgument(0)).run();
+              return null;
+            })
+        .when(mockExecutor)
+        .execute(any(Runnable.class));
+
+    File realTempFile = new File(externalDirectory, "temp.jpg");
+    assertTrue(realTempFile.createNewFile());
+    assertTrue(realTempFile.exists());
+
+    mockStaticFile
+        .when(() -> File.createTempFile(anyString(), anyString(), any(File.class)))
+        .thenReturn(realTempFile);
+
+    when(mockPermissionManager.isPermissionGranted(Manifest.permission.CAMERA)).thenReturn(true);
+
+    ImagePickerDelegate delegate = createDelegate();
+
+    final Boolean[] callbackCalled = new Boolean[1];
+    delegate.takeImageWithCamera(
+        DEFAULT_IMAGE_OPTIONS,
+        ResultCompat.asCompatCallback(
+            reply -> {
+              callbackCalled[0] = true;
+              assertTrue(reply.isSuccess());
+              assertTrue(reply.getOrNull().isEmpty());
+              return null;
+            }));
+
+    assertTrue(realTempFile.exists());
+
+    delegate.onActivityResult(
+        ImagePickerDelegate.REQUEST_CODE_TAKE_IMAGE_WITH_CAMERA, Activity.RESULT_CANCELED, null);
+
+    assertTrue(callbackCalled[0]);
+    assertFalse(realTempFile.exists());
+  }
+
+  @Test
+  public void onActivityResult_whenTakeVideoWithCameraCanceled_deletesTemporaryFile() throws IOException {
+    Mockito.doAnswer(
+            invocation -> {
+              ((Runnable) invocation.getArgument(0)).run();
+              return null;
+            })
+        .when(mockExecutor)
+        .execute(any(Runnable.class));
+
+    File realTempFile = new File(externalDirectory, "temp.mp4");
+    assertTrue(realTempFile.createNewFile());
+    assertTrue(realTempFile.exists());
+
+    mockStaticFile
+        .when(() -> File.createTempFile(anyString(), anyString(), any(File.class)))
+        .thenReturn(realTempFile);
+
+    when(mockPermissionManager.isPermissionGranted(Manifest.permission.CAMERA)).thenReturn(true);
+
+    ImagePickerDelegate delegate = createDelegate();
+
+    final Boolean[] callbackCalled = new Boolean[1];
+    delegate.takeVideoWithCamera(
+        DEFAULT_VIDEO_OPTIONS,
+        ResultCompat.asCompatCallback(
+            reply -> {
+              callbackCalled[0] = true;
+              assertTrue(reply.isSuccess());
+              assertTrue(reply.getOrNull().isEmpty());
+              return null;
+            }));
+
+    assertTrue(realTempFile.exists());
+
+    delegate.onActivityResult(
+        ImagePickerDelegate.REQUEST_CODE_TAKE_VIDEO_WITH_CAMERA, Activity.RESULT_CANCELED, null);
+
+    assertTrue(callbackCalled[0]);
+    assertFalse(realTempFile.exists());
+  }
+
+  @Test
   public void onActivityResult_whenImageTakenWithCamera_andNoResizeNeeded_finishesWithImagePath() {
     when(cache.retrievePendingCameraMediaUriPath()).thenReturn("testString");
     Mockito.doAnswer(
