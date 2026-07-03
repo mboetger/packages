@@ -15,7 +15,22 @@ import UIKit
     var mapsApiKey = ProcessInfo.processInfo.environment["MAPS_API_KEY"] ?? "YOUR KEY HERE"
     GMSServices.provideAPIKey(mapsApiKey)
 
-    return super.application(application, didFinishLaunchingWithOptions: launchOptions)
+    let result = super.application(application, didFinishLaunchingWithOptions: launchOptions)
+
+    let controller : FlutterViewController = window?.rootViewController as! FlutterViewController
+    let channel = FlutterMethodChannel(name: "google_maps_flutter_example/test_helper",
+                                      binaryMessenger: controller.binaryMessenger)
+    channel.setMethodCallHandler({
+      (call: FlutterMethodCall, result: @escaping FlutterResult) -> Void in
+      if call.method == "isApiKeySet" {
+        let isSet = mapsApiKey != "YOUR KEY HERE" && !mapsApiKey.isEmpty
+        result(isSet)
+      } else {
+        result(FlutterMethodNotImplemented)
+      }
+    })
+
+    return result
   }
 
   func didInitializeImplicitFlutterEngine(_ engineBridge: FlutterImplicitEngineBridge) {

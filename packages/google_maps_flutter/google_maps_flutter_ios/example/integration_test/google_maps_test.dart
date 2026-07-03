@@ -8,6 +8,7 @@ import 'dart:typed_data';
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:google_maps_flutter_example/example_google_map.dart';
 import 'package:google_maps_flutter_platform_interface/google_maps_flutter_platform_interface.dart';
@@ -44,6 +45,16 @@ final LatLngBounds _testCameraBounds = LatLngBounds(
 final ValueVariant<CameraUpdateType> _cameraUpdateTypeVariants = ValueVariant<CameraUpdateType>(
   CameraUpdateType.values.toSet(),
 );
+
+Future<bool> _isApiKeySet() async {
+  const MethodChannel channel =
+      MethodChannel('google_maps_flutter_example/test_helper');
+  try {
+    return await channel.invokeMethod<bool>('isApiKeySet') ?? false;
+  } catch (_) {
+    return false;
+  }
+}
 
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
@@ -924,6 +935,10 @@ void main() {
   testWidgets(
     'testTakeSnapshot',
     (WidgetTester tester) async {
+      if (!await _isApiKeySet()) {
+        markTestSkipped('Google Maps API key is not configured');
+        return;
+      }
       final controllerCompleter = Completer<ExampleGoogleMapController>();
 
       await tester.pumpWidget(
@@ -944,8 +959,6 @@ void main() {
       final Uint8List? bytes = await controller.takeSnapshot();
       expect(bytes?.isNotEmpty, true);
     },
-    // TODO(stuartmorgan): Re-enable; see https://github.com/flutter/flutter/issues/139825
-    skip: true,
   );
 
   testWidgets('set tileOverlay correctly', (WidgetTester tester) async {

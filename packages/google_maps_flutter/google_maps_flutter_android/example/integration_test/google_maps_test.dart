@@ -46,6 +46,16 @@ final ValueVariant<CameraUpdateType> _cameraUpdateTypeVariants = ValueVariant<Ca
   CameraUpdateType.values.toSet(),
 );
 
+Future<bool> _isApiKeySet() async {
+  const MethodChannel channel =
+      MethodChannel('google_maps_flutter_example/test_helper');
+  try {
+    return await channel.invokeMethod<bool>('isApiKeySet') ?? false;
+  } catch (_) {
+    return false;
+  }
+}
+
 void main() {
   late AndroidMapRenderer initializedRenderer;
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
@@ -1063,6 +1073,10 @@ void main() {
   testWidgets(
     'testTakeSnapshot',
     (WidgetTester tester) async {
+      if (!await _isApiKeySet()) {
+        markTestSkipped('Google Maps API key is not configured');
+        return;
+      }
       final controllerCompleter = Completer<ExampleGoogleMapController>();
 
       await tester.pumpWidget(
@@ -1083,9 +1097,6 @@ void main() {
       final Uint8List? bytes = await controller.takeSnapshot();
       expect(bytes?.isNotEmpty, true);
     },
-    // TODO(cyanglaz): un-skip the test when we can test this on CI with API key enabled.
-    // https://github.com/flutter/flutter/issues/57057
-    skip: true,
   );
 
   testWidgets('set tileOverlay correctly', (WidgetTester tester) async {

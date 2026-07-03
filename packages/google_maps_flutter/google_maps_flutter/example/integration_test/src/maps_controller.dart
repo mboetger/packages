@@ -7,6 +7,7 @@ import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:integration_test/integration_test.dart';
@@ -18,6 +19,16 @@ import 'shared.dart';
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
   runTests();
+}
+
+Future<bool> _isApiKeySet() async {
+  const MethodChannel channel =
+      MethodChannel('google_maps_flutter_example/test_helper');
+  try {
+    return await channel.invokeMethod<bool>('isApiKeySet') ?? false;
+  } catch (_) {
+    return false;
+  }
 }
 
 void runTests() {
@@ -509,6 +520,10 @@ void runTests() {
   testWidgets(
     'testTakeSnapshot',
     (WidgetTester tester) async {
+      if ((isAndroid || isIOS) && !await _isApiKeySet()) {
+        markTestSkipped('Google Maps API key is not configured');
+        return;
+      }
       final controllerCompleter = Completer<GoogleMapController>();
 
       await pumpMap(
@@ -529,7 +544,7 @@ void runTests() {
     // TODO(cyanglaz): un-skip the test when we can test this on CI with API key enabled.
     // https://github.com/flutter/flutter/issues/57057
     // https://github.com/flutter/flutter/issues/139825
-    skip: isAndroid || isWeb || isIOS,
+    skip: isWeb,
   );
 
   testWidgets('testMapId', (WidgetTester tester) async {
