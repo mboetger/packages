@@ -4,6 +4,7 @@
 
 package io.flutter.plugins.localauth;
 
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -11,10 +12,14 @@ import static org.mockito.Mockito.when;
 import android.app.Application;
 import android.content.Context;
 import androidx.biometric.BiometricPrompt;
+import androidx.core.hardware.fingerprint.FingerprintManagerCompat;
 import androidx.fragment.app.FragmentActivity;
 import io.flutter.plugins.localauth.AuthenticationHelper.AuthCompletionHandler;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mockito.MockedStatic;
+import org.mockito.Mockito;
+import org.robolectric.Robolectric;
 import org.robolectric.RobolectricTestRunner;
 
 // TODO(stuartmorgan): Add injectable BiometricPrompt factory, and AlertDialog factor, and add
@@ -248,6 +253,60 @@ public class AuthenticationHelperTest {
     helper.onAuthenticationError(BiometricPrompt.ERROR_UNABLE_TO_PROCESS, "");
 
     verify(handler).complete(new AuthResult(AuthResultCode.UNKNOWN_ERROR, ""));
+  }
+
+  @Test
+  @org.robolectric.annotation.Config(sdk = 27)
+  @SuppressWarnings("deprecation")
+  public void authenticate_withNonAppCompatTheme_reproducesCrash() {
+    final FragmentActivity activity = Robolectric.buildActivity(FragmentActivity.class).create().start().resume().get();
+    activity.setTheme(android.R.style.Theme_Black_NoTitleBar); // Non-AppCompat theme
+
+    final AuthCompletionHandler handler = mock(AuthCompletionHandler.class);
+    final AuthenticationHelper helper =
+        new AuthenticationHelper(
+            null,
+            activity,
+            defaultOptions,
+            dummyStrings,
+            handler,
+            false);
+
+    // Mock FingerprintManagerCompat to simulate hardware presence and enrollment
+    final FingerprintManagerCompat mockCompat = mock(FingerprintManagerCompat.class);
+    when(mockCompat.isHardwareDetected()).thenReturn(true);
+    when(mockCompat.hasEnrolledFingerprints()).thenReturn(true);
+
+    try (MockedStatic<FingerprintManagerCompat> staticMock = Mockito.mockStatic(FingerprintManagerCompat.class)) {
+      staticMock.when(() -> FingerprintManagerCompat.from(any(Context.class))).thenReturn(mockCompat);
+
+      System.out.println("SDK: " + android.os.Build.VERSION.SDK_INT);
+      System.out.println("Activity FP hardware via Compat: " + FingerprintManagerCompat.from(activity).isHardwareDetected());
+      System.out.println("BiometricManager canAuthenticate: " + androidx.biometric.BiometricManager.from(activity).canAuthenticate());
+
+      // This is expected to throw IllegalStateException: You need to use a Theme.AppCompat theme...
+      try {
+        helper.authenticate();
+      } catch (IllegalStateException e) {
+        System.out.println("CAUGHT EXCEPTION: " + e.getMessage());
+        e.printStackTrace();
+        throw e;
+      }
+    }
+
+    System.out.println("Fragments before idle: " + activity.getSupportFragmentManager().getFragments());
+    org.robolectric.Shadows.shadowOf(android.os.Looper.getMainLooper()).idle();
+    System.out.println("Fragments after idle: " + activity.getSupportFragmentManager().getFragments());
+
+    boolean dialogShown = false;
+    for (androidx.fragment.app.Fragment f : activity.getSupportFragmentManager().getFragments()) {
+      if (f.getClass().getName().equals("androidx.biometric.FingerprintDialogFragment")) {
+        dialogShown = true;
+      }
+    }
+    org.junit.Assert.assertTrue(dialogShown);
+
+    helper.stopAuthentication();
   }
 
   private FragmentActivity buildMockActivityWithContext(FragmentActivity mockActivity) {

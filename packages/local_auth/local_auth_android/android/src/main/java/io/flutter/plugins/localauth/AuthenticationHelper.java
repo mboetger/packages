@@ -82,6 +82,7 @@ class AuthenticationHelper extends BiometricPrompt.AuthenticationCallback
     } else {
       activity.getApplication().registerActivityLifecycleCallbacks(this);
     }
+    activity.getTheme().applyStyle(androidx.appcompat.R.style.Theme_AppCompat, false);
     biometricPrompt = new BiometricPrompt(activity, uiThreadExecutor, this);
     biometricPrompt.authenticate(promptInfo);
   }

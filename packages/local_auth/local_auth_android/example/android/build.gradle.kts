@@ -40,6 +40,7 @@ gradle.projectsEvaluated {
     project(":local_auth_android") {
         tasks.withType<JavaCompile> {
             options.compilerArgs.addAll(listOf("-Xlint:all", "-Werror"))
+            options.compilerArgs.addAll(listOf("-Xlint:all"))
         }
     }
 }

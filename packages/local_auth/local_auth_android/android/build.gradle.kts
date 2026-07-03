@@ -23,6 +23,7 @@ rootProject.allprojects {
 
 plugins {
     id("com.android.library")
+    id("org.jetbrains.kotlin.android")
 }
 
 kotlin {
@@ -70,6 +71,7 @@ dependencies {
     api("androidx.core:core:1.18.0")
     api("androidx.biometric:biometric:1.1.0")
     api("androidx.fragment:fragment:1.8.9")
+    implementation("androidx.appcompat:appcompat:1.7.0")
     testImplementation("junit:junit:4.13.2")
     testImplementation("org.mockito:mockito-core:5.23.0")
     testImplementation("org.robolectric:robolectric:4.16")
