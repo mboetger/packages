@@ -8,7 +8,6 @@ import android.os.Handler;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import io.flutter.embedding.engine.systemchannels.PlatformChannel;
-import io.flutter.plugin.common.MethodChannel;
 import io.flutter.plugins.camera.features.autofocus.FocusMode;
 import io.flutter.plugins.camera.features.exposurelock.ExposureMode;
 
@@ -106,7 +105,7 @@ public class DartMessenger {
   }
 
   /**
-   * Send a success payload to a {@link MethodChannel.Result} on the main thread.
+   * Send a success payload to a {@link Messages.Result} on the main thread.
    *
    * @param payload The payload to send.
    */
@@ -115,7 +114,16 @@ public class DartMessenger {
   }
 
   /**
-   * Send an error payload to a {@link MethodChannel.Result} on the main thread.
+   * Send a success payload to a {@link Messages.VoidResult} on the main thread.
+   *
+   * @param result The result to finish.
+   */
+  public void finish(@NonNull Messages.VoidResult result) {
+    handler.post(result::success);
+  }
+
+  /**
+   * Send an error payload to a {@link Messages.Result} on the main thread.
    *
    * @param errorCode error code.
    * @param errorMessage error message.
@@ -123,6 +131,23 @@ public class DartMessenger {
    */
   public <T> void error(
       @NonNull Messages.Result<T> result,
+      @NonNull String errorCode,
+      @Nullable String errorMessage,
+      @Nullable Object errorDetails) {
+    handler.post(
+        () -> result.error(new Messages.FlutterError(errorCode, errorMessage, errorDetails)));
+  }
+
+  /**
+   * Send an error payload to a {@link Messages.VoidResult} on the main thread.
+   *
+   * @param result The result to finish with error.
+   * @param errorCode error code.
+   * @param errorMessage error message.
+   * @param errorDetails error details.
+   */
+  public void error(
+      @NonNull Messages.VoidResult result,
       @NonNull String errorCode,
       @Nullable String errorMessage,
       @Nullable Object errorDetails) {

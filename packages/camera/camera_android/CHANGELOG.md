@@ -1,3 +1,7 @@
+## 0.10.10+19
+
+* Fixes UI freeze by running `startVideoRecording` and `stopVideoRecording` on a background thread.
+
 ## 0.10.10+18
 
 * Bumps the androidx group across 10 directories with 1 update.

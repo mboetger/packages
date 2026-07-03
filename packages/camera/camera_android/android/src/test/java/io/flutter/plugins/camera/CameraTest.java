@@ -163,6 +163,13 @@ public class CameraTest {
     mockHandlerThread = mock(HandlerThread.class);
     mockHandlerFactory = mockStatic(Camera.HandlerFactory.class);
     mockHandler = mock(Handler.class);
+    when(mockHandler.post(any(Runnable.class)))
+        .thenAnswer(
+            invocation -> {
+              Runnable runnable = invocation.getArgument(0);
+              runnable.run();
+              return true;
+            });
 
     mockActivity = mock(Activity.class);
     TextureRegistry.SurfaceTextureEntry mockFlutterTexture =
@@ -941,7 +948,7 @@ public class CameraTest {
     when(resolutionFeature.getPreviewSize()).thenReturn(mockSize);
     doNothing().when(cameraSpy).prepareRecording();
 
-    cameraSpy.startVideoRecording(null);
+    cameraSpy.startVideoRecording(null, mock(Messages.VoidResult.class));
     verify(mockMediaRecorder, times(1))
         .getSurface(); // stream pulled from media recorder's surface.
     verify(
@@ -1361,7 +1368,7 @@ public class CameraTest {
       assertNotNull(resolutionFeature);
       when(resolutionFeature.getPreviewSize()).thenReturn(mockSize);
 
-      camera.startVideoRecording(null);
+      camera.startVideoRecording(null, mock(Messages.VoidResult.class));
 
       // region Check that FPS parameter affects AE range at which the camera captures frames.
       assertEquals(camera.cameraFeatures.getFpsRange().getValue().getLower(), Integer.valueOf(fps));
@@ -1528,5 +1535,56 @@ public class CameraTest {
         @NonNull CameraProperties cameraProperties) {
       return mockNoiseReductionFeature;
     }
+  }
+
+  @Test
+  public void stopVideoRecording_shouldRunStopOnBackgroundThread() throws Exception {
+    Camera cameraSpy = spy(camera);
+    MediaRecorder mockMediaRecorder = mock(MediaRecorder.class);
+    cameraSpy.mediaRecorder = mockMediaRecorder;
+    cameraSpy.recordingVideo = true;
+    cameraSpy.captureSession = mockCaptureSession;
+
+    java.lang.reflect.Field captureFileField = Camera.class.getDeclaredField("captureFile");
+    captureFileField.setAccessible(true);
+    File mockFile = mock(File.class);
+    when(mockFile.getAbsolutePath()).thenReturn("/tmp/test.mp4");
+    captureFileField.set(cameraSpy, mockFile);
+
+    doNothing().when(cameraSpy).startPreview(any());
+
+    final Thread callingThread = Thread.currentThread();
+
+    doAnswer(
+            invocation -> {
+              assertFalse(
+                  "mediaRecorder.stop() should not be called on the calling thread (UI thread)",
+                  callingThread == Thread.currentThread());
+              return null;
+            })
+        .when(mockMediaRecorder)
+        .stop();
+
+    final java.util.concurrent.CountDownLatch latch = new java.util.concurrent.CountDownLatch(1);
+    when(mockHandler.post(any(Runnable.class)))
+        .thenAnswer(
+            invocation -> {
+              Runnable runnable = invocation.getArgument(0);
+              new Thread(
+                      () -> {
+                        runnable.run();
+                        latch.countDown();
+                      })
+                  .start();
+              return true;
+            });
+
+    @SuppressWarnings("unchecked")
+    Messages.Result<String> mockResult = mock(Messages.Result.class);
+    cameraSpy.stopVideoRecording(mockResult);
+
+    org.junit.Assert.assertTrue(latch.await(5, java.util.concurrent.TimeUnit.SECONDS));
+    verify(mockMediaRecorder, times(1)).stop();
+    verify(mockDartMessenger, times(1)).finish(eq(mockResult), eq("/tmp/test.mp4"));
   }
 }

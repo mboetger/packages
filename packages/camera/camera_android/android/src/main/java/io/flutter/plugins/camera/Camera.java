@@ -869,21 +869,26 @@ class Camera
             dartMessenger.error(flutterResult, errorCode, errorMessage, null));
   }
 
-  public void startVideoRecording(@Nullable EventChannel imageStreamChannel) {
-    prepareRecording();
-
+  public void startVideoRecording(
+      @Nullable EventChannel imageStreamChannel, @NonNull final Messages.VoidResult result) {
     if (imageStreamChannel != null) {
       setStreamHandler(imageStreamChannel);
     }
     initialCameraFacing = cameraProperties.getLensFacing();
     recordingVideo = true;
-    try {
-      startCapture(true, imageStreamChannel != null);
-    } catch (CameraAccessException e) {
-      recordingVideo = false;
-      captureFile = null;
-      throw new Messages.FlutterError("videoRecordingFailed", e.getMessage(), null);
-    }
+
+    backgroundHandler.post(
+        () -> {
+          try {
+            prepareRecording();
+            startCapture(true, imageStreamChannel != null);
+            dartMessenger.finish(result);
+          } catch (Exception e) {
+            recordingVideo = false;
+            captureFile = null;
+            dartMessenger.error(result, "videoRecordingFailed", e.getMessage(), null);
+          }
+        });
   }
 
   private void closeRenderer() {
@@ -893,9 +898,10 @@ class Camera
     }
   }
 
-  public String stopVideoRecording() {
+  public void stopVideoRecording(@NonNull final Messages.Result<String> result) {
     if (!recordingVideo) {
-      return "";
+      dartMessenger.finish(result, "");
+      return;
     }
     // Re-create autofocus feature so it's using continuous capture focus mode now.
     cameraFeatures.setAutoFocus(
@@ -904,23 +910,33 @@ class Camera
     cameraFeatures.setFpsRange(cameraFeatureFactory.createFpsRangeFeature(cameraProperties));
 
     recordingVideo = false;
-    try {
-      closeRenderer();
-      captureSession.abortCaptures();
-      mediaRecorder.stop();
-    } catch (CameraAccessException | IllegalStateException e) {
-      // Ignore exceptions and try to continue (changes are camera session already aborted capture).
-    }
-    mediaRecorder.reset();
-    try {
-      // Don't wait for start preview
-      startPreview(null);
-    } catch (CameraAccessException | IllegalStateException | InterruptedException e) {
-      throw new Messages.FlutterError("videoRecordingFailed", e.getMessage(), null);
-    }
-    String path = captureFile.getAbsolutePath();
+
+    final File localCaptureFile = captureFile;
     captureFile = null;
-    return path;
+
+    backgroundHandler.post(
+        () -> {
+          try {
+            closeRenderer();
+            if (captureSession != null) {
+              captureSession.abortCaptures();
+            }
+            mediaRecorder.stop();
+          } catch (CameraAccessException | IllegalStateException e) {
+            // Ignore exceptions and try to continue (changes are camera session already aborted
+            // capture).
+          }
+          mediaRecorder.reset();
+          try {
+            // Don't wait for start preview
+            startPreview(null);
+          } catch (CameraAccessException | IllegalStateException | InterruptedException e) {
+            dartMessenger.error(result, "videoRecordingFailed", e.getMessage(), null);
+            return;
+          }
+          String path = localCaptureFile == null ? "" : localCaptureFile.getAbsolutePath();
+          dartMessenger.finish(result, path);
+        });
   }
 
   public void pauseVideoRecording() {
