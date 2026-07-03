@@ -229,7 +229,12 @@ class InAppPurchaseAndroidPlatform extends InAppPurchasePlatform {
           (PurchaseWrapper purchaseWrapper) =>
               GooglePlayPurchaseDetails.fromPurchase(purchaseWrapper),
         )
-        .map((GooglePlayPurchaseDetails details) => details..status = PurchaseStatus.restored)
+        .map((GooglePlayPurchaseDetails details) {
+          if (details.status == PurchaseStatus.purchased) {
+            details.status = PurchaseStatus.restored;
+          }
+          return details;
+        })
         .toList();
 
     if (errorMessage.isNotEmpty) {

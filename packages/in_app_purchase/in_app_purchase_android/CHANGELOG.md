@@ -1,3 +1,7 @@
+## 0.5.2
+
+* Fixes an issue where failed and pending purchases were incorrectly mapped to restored status during `restorePurchases` on Android.
+
 ## 0.5.1
 
 * Adds support to overlay billing related messages. See `InAppPurchaseAndroidPlatformAddition.showInAppMessages`.

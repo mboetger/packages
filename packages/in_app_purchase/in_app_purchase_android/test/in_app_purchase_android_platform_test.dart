@@ -291,6 +291,102 @@ void main() {
         expect(purchase.status, PurchaseStatus.restored);
       }
     });
+
+    test('should not map pending purchases to restored', () async {
+      final completer = Completer<List<PurchaseDetails>>();
+      final Stream<List<PurchaseDetails>> stream = iapAndroidPlatform.purchaseStream;
+
+      late StreamSubscription<List<PurchaseDetails>> subscription;
+      subscription = stream.listen((List<PurchaseDetails> purchaseDetailsList) {
+        completer.complete(purchaseDetailsList);
+        subscription.cancel();
+      });
+
+      const debugMessage = 'dummy message';
+      const PlatformBillingResponse responseCode = PlatformBillingResponse.ok;
+
+      final pendingPurchase = PlatformPurchase(
+        orderId: 'pending_order',
+        products: <String>['pending_product'],
+        isAutoRenewing: false,
+        packageName: 'package',
+        purchaseTime: 1231231231,
+        purchaseToken: 'pending_token',
+        signature: 'sign',
+        originalJson: 'json',
+        developerPayload: 'dummy payload',
+        isAcknowledged: false,
+        purchaseState: PlatformPurchaseState.pending,
+        quantity: 1,
+      );
+
+      when(mockApi.queryPurchasesAsync(any)).thenAnswer(
+        (_) async => PlatformPurchasesResponse(
+          billingResult: PlatformBillingResult(
+            responseCode: responseCode,
+            debugMessage: debugMessage,
+          ),
+          purchases: <PlatformPurchase>[pendingPurchase],
+        ),
+      );
+
+      await iapAndroidPlatform.restorePurchases();
+      final List<PurchaseDetails> restoredPurchases = await completer.future;
+
+      expect(restoredPurchases.length, 2);
+      for (final element in restoredPurchases) {
+        final purchase = element as GooglePlayPurchaseDetails;
+        expect(purchase.status, PurchaseStatus.pending);
+      }
+    });
+
+    test('should not map failed/unspecified purchases to restored', () async {
+      final completer = Completer<List<PurchaseDetails>>();
+      final Stream<List<PurchaseDetails>> stream = iapAndroidPlatform.purchaseStream;
+
+      late StreamSubscription<List<PurchaseDetails>> subscription;
+      subscription = stream.listen((List<PurchaseDetails> purchaseDetailsList) {
+        completer.complete(purchaseDetailsList);
+        subscription.cancel();
+      });
+
+      const debugMessage = 'dummy message';
+      const PlatformBillingResponse responseCode = PlatformBillingResponse.ok;
+
+      final unspecifiedPurchase = PlatformPurchase(
+        orderId: 'unspecified_order',
+        products: <String>['unspecified_product'],
+        isAutoRenewing: false,
+        packageName: 'package',
+        purchaseTime: 1231231231,
+        purchaseToken: 'unspecified_token',
+        signature: 'sign',
+        originalJson: 'json',
+        developerPayload: 'dummy payload',
+        isAcknowledged: false,
+        purchaseState: PlatformPurchaseState.unspecified,
+        quantity: 1,
+      );
+
+      when(mockApi.queryPurchasesAsync(any)).thenAnswer(
+        (_) async => PlatformPurchasesResponse(
+          billingResult: PlatformBillingResult(
+            responseCode: responseCode,
+            debugMessage: debugMessage,
+          ),
+          purchases: <PlatformPurchase>[unspecifiedPurchase],
+        ),
+      );
+
+      await iapAndroidPlatform.restorePurchases();
+      final List<PurchaseDetails> restoredPurchases = await completer.future;
+
+      expect(restoredPurchases.length, 2);
+      for (final element in restoredPurchases) {
+        final purchase = element as GooglePlayPurchaseDetails;
+        expect(purchase.status, PurchaseStatus.error);
+      }
+    });
   });
 
   group('make payment', () {
