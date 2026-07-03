@@ -20,7 +20,7 @@ class GooglePlayPurchaseDetails extends PurchaseDetails {
     required this.billingClientPurchase,
     required super.status,
   }) {
-    pendingCompletePurchase = status == PurchaseStatus.purchased;
+    pendingCompletePurchase = !billingClientPurchase.isAcknowledged;
   }
 
   /// Generates a [List] of [PurchaseDetails] based on an Android [Purchase] object.
