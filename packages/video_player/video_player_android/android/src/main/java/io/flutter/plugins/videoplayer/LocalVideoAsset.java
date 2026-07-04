@@ -24,6 +24,6 @@ final class LocalVideoAsset extends VideoAsset {
   @NonNull
   @Override
   public MediaSource.Factory getMediaSourceFactory(@NonNull Context context) {
-    return new DefaultMediaSourceFactory(context);
+    return new DefaultMediaSourceFactory(context, getExtractorsFactory());
   }
 }

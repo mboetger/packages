@@ -9,6 +9,9 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.media3.common.MediaItem;
 import androidx.media3.exoplayer.source.MediaSource;
+import androidx.media3.extractor.DefaultExtractorsFactory;
+import androidx.media3.extractor.mp4.FragmentedMp4Extractor;
+import androidx.media3.extractor.mp4.Mp4Extractor;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -81,6 +84,20 @@ public abstract class VideoAsset {
    */
   @NonNull
   public abstract MediaSource.Factory getMediaSourceFactory(@NonNull Context context);
+
+  /**
+   * Returns a default extractors factory configured to ignore MP4 edit lists.
+   *
+   * <p>See https://github.com/flutter/flutter/issues/64438.
+   *
+   * @return configured extractors factory.
+   */
+  @NonNull
+  protected static DefaultExtractorsFactory getExtractorsFactory() {
+    return new DefaultExtractorsFactory()
+        .setMp4ExtractorFlags(Mp4Extractor.FLAG_WORKAROUND_IGNORE_EDIT_LISTS)
+        .setFragmentedMp4ExtractorFlags(FragmentedMp4Extractor.FLAG_WORKAROUND_IGNORE_EDIT_LISTS);
+  }
 
   /** Streaming formats that can be provided to the video player as a hint. */
   enum StreamingFormat {
