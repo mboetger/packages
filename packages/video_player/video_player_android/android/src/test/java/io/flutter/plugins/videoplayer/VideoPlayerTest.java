@@ -128,6 +128,40 @@ public final class VideoPlayerTest {
   }
 
   @Test
+  public void setMixWithOthersUpdatesExoPlayerAudioAttributes() {
+    VideoPlayer videoPlayer = createVideoPlayer();
+
+    videoPlayer.setMixWithOthers(true);
+    verify(mockExoPlayer).setAudioAttributes(attributesCaptor.capture(), eq(false));
+    assertEquals(attributesCaptor.getValue().contentType, C.AUDIO_CONTENT_TYPE_MOVIE);
+
+    videoPlayer.setMixWithOthers(false);
+    verify(mockExoPlayer, times(2)).setAudioAttributes(attributesCaptor.capture(), eq(true));
+    assertEquals(attributesCaptor.getValue().contentType, C.AUDIO_CONTENT_TYPE_MOVIE);
+
+    videoPlayer.dispose();
+  }
+
+  @Test
+  public void playingTwoVideosSimultaneouslyWithoutMixModeCausesAudioFocusInterference() {
+    VideoPlayer player1 = createVideoPlayer();
+    VideoPlayer player2 = createVideoPlayer();
+
+    player1.play();
+    player2.play();
+
+    // When two video players play simultaneously without audio mixing enabled, both configure
+    // ExoPlayer with handleAudioFocus = true (via setAudioAttributes(..., true)).
+    // On Android, when Player 2 starts playing and acquires audio focus, Android's AudioManager
+    // revokes audio focus from Player 1 (AUDIOFOCUS_LOSS), which causes ExoPlayer #1 to automatically
+    // stop/pause playback.
+    verify(mockExoPlayer, times(2)).setAudioAttributes(any(), eq(true));
+
+    player1.dispose();
+    player2.dispose();
+  }
+
+  @Test
   public void playsAndPausesProvidedMedia() {
     VideoPlayer videoPlayer = createVideoPlayer();
 

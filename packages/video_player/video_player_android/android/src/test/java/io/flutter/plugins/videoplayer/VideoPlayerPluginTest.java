@@ -9,6 +9,7 @@ import static org.mockito.Mockito.*;
 
 import android.content.Context;
 import android.util.LongSparseArray;
+import androidx.media3.exoplayer.ExoPlayer;
 import io.flutter.embedding.engine.plugins.FlutterPlugin;
 import io.flutter.plugin.platform.PlatformViewRegistry;
 import io.flutter.plugins.videoplayer.platformview.PlatformVideoViewFactory;
@@ -109,6 +110,57 @@ public class VideoPlayerPluginTest {
 
       final LongSparseArray<VideoPlayer> videoPlayers = getVideoPlayers();
       assertTrue(videoPlayers.get(ids.getPlayerId()) instanceof TextureVideoPlayer);
+    }
+  }
+
+  @Test
+  public void setMixWithOthersUpdatesExistingPlayersToAllowSimultaneousPlayback() throws Exception {
+    try (MockedStatic<TextureVideoPlayer> mockedTextureVideoPlayerStatic =
+        mockStatic(TextureVideoPlayer.class)) {
+      TextureVideoPlayer mockPlayer1 = mock(TextureVideoPlayer.class);
+      TextureVideoPlayer mockPlayer2 = mock(TextureVideoPlayer.class);
+      ExoPlayer mockExoPlayer1 = mock(ExoPlayer.class);
+      ExoPlayer mockExoPlayer2 = mock(ExoPlayer.class);
+      when(mockPlayer1.getExoPlayer()).thenReturn(mockExoPlayer1);
+      when(mockPlayer2.getExoPlayer()).thenReturn(mockExoPlayer2);
+
+      TextureRegistry.SurfaceProducer mockSurfaceProducer1 =
+          mock(TextureRegistry.SurfaceProducer.class);
+      TextureRegistry.SurfaceProducer mockSurfaceProducer2 =
+          mock(TextureRegistry.SurfaceProducer.class);
+      when(mockSurfaceProducer1.id()).thenReturn(1L);
+      when(mockSurfaceProducer2.id()).thenReturn(2L);
+      when(mockTextureRegistry.createSurfaceProducer())
+          .thenReturn(mockSurfaceProducer1, mockSurfaceProducer2);
+
+      mockedTextureVideoPlayerStatic
+          .when(() -> TextureVideoPlayer.create(any(), any(), any(), any(), any()))
+          .thenReturn(mockPlayer1, mockPlayer2);
+
+      final CreateMessage createMessage =
+          new CreateMessage.Builder()
+              .setViewType(PlatformVideoViewType.TEXTURE_VIEW)
+              .setUri("https://flutter.github.io/assets-for-api-docs/assets/videos/bee.mp4")
+              .setHttpHeaders(new HashMap<>())
+              .build();
+
+      // 1. Create two video players simultaneously (e.g. for side-by-side video playback in an app).
+      final long playerId1 = plugin.create(createMessage);
+      final long playerId2 = plugin.create(createMessage);
+
+      final LongSparseArray<VideoPlayer> videoPlayers = getVideoPlayers();
+      assertEquals(mockPlayer1, videoPlayers.get(playerId1));
+      assertEquals(mockPlayer2, videoPlayers.get(playerId2));
+
+      // 2. Call setMixWithOthers(true) so both videos can play simultaneously without audio focus
+      // interference on Android.
+      plugin.setMixWithOthers(true);
+
+      // 3. Verify that existing video players are updated with mixWithOthers = true so that
+      // when play() is called on both controllers simultaneously, the second player's audio focus request
+      // does not revoke audio focus from the first player and cause it to stop/pause.
+      verify(mockPlayer1).setMixWithOthers(true);
+      verify(mockPlayer2).setMixWithOthers(true);
     }
   }
 }

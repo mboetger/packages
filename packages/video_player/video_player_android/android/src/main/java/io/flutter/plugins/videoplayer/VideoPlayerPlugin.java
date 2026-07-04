@@ -190,7 +190,49 @@ public class VideoPlayerPlugin implements FlutterPlugin, AndroidVideoPlayerApi {
     return packageName == null
         ? flutterState.keyForAsset.get(asset)
         : flutterState.keyForAssetAndPackageName.get(asset, packageName);
+  public void setVolume(@NonNull Long playerId, @NonNull Double volume) {
+    VideoPlayer player = getPlayer(playerId);
+    player.setVolume(volume);
   }
+
+  @Override
+  public void setPlaybackSpeed(@NonNull Long playerId, @NonNull Double speed) {
+    VideoPlayer player = getPlayer(playerId);
+    player.setPlaybackSpeed(speed);
+  }
+
+  @Override
+  public void play(@NonNull Long playerId) {
+    VideoPlayer player = getPlayer(playerId);
+    player.play();
+  }
+
+  @Override
+  public @NonNull Long position(@NonNull Long playerId) {
+    VideoPlayer player = getPlayer(playerId);
+    long position = player.getPosition();
+    player.sendBufferingUpdate();
+    return position;
+  }
+
+  @Override
+  public void seekTo(@NonNull Long playerId, @NonNull Long position) {
+    VideoPlayer player = getPlayer(playerId);
+    player.seekTo(position.intValue());
+  }
+
+  @Override
+  public void pause(@NonNull Long playerId) {
+    VideoPlayer player = getPlayer(playerId);
+    player.pause();
+  }
+
+  @Override
+  public void setMixWithOthers(@NonNull Boolean mixWithOthers) {
+    options.mixWithOthers = mixWithOthers;
+    for (int i = 0; i < videoPlayers.size(); i++) {
+      videoPlayers.valueAt(i).setMixWithOthers(mixWithOthers);
+    }  }
 
   private interface KeyForAssetFn {
     String get(String asset);

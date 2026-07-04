@@ -124,7 +124,12 @@ public abstract class VideoPlayer implements VideoPlayerInstanceApi {
 
   @Override
   public void play() {
-    exoPlayer.play();
+  public void setMixWithOthers(boolean mixWithOthers) {
+    options.mixWithOthers = mixWithOthers;
+    setAudioAttributes(exoPlayer, mixWithOthers);
+  }
+
+  void play() {    exoPlayer.play();
   }
 
   @Override
