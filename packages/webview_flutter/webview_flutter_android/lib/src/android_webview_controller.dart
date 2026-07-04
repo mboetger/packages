@@ -415,9 +415,19 @@ class AndroidWebViewController extends PlatformWebViewController {
       android_webview.PigeonInstanceManager.instance.getIdentifier(_webView)!;
 
   @override
-  Future<void> loadFile(String absoluteFilePath) {
-    return loadFileWithParams(AndroidLoadFileParams(absoluteFilePath: absoluteFilePath));
-  }
+  Future<void> loadFile(
+    String absoluteFilePath,
+  ) async {
+    final String url = absoluteFilePath.startsWith('file://')
+        ? absoluteFilePath
+        : Uri.file(absoluteFilePath).toString();
+
+    if (!await _shouldLoadUrl(url)) {
+      return;
+    }
+
+    await _webView.settings.setAllowFileAccess(true);
+    return _webView.loadUrl(url, <String, String>{});  }
 
   @override
   Future<void> loadFileWithParams(LoadFileParams params) async {
@@ -444,8 +454,13 @@ class AndroidWebViewController extends PlatformWebViewController {
       throw ArgumentError('Asset for key "$key" not found.', 'key');
     }
 
+    final String url = Uri.file('/android_asset/$assetFilePath').toString();
+    if (!await _shouldLoadUrl(url)) {
+      return;
+    }
+
     return _webView.loadUrl(
-      Uri.file('/android_asset/$assetFilePath').toString(),
+      url,
       <String, String>{},
     );
   }
@@ -456,8 +471,21 @@ class AndroidWebViewController extends PlatformWebViewController {
   }
 
   @override
-  Future<void> loadRequest(LoadRequestParams params) {
+  Future<void> loadRequest(
+    LoadRequestParams params,
+  ) async {
     if (!params.uri.hasScheme) {
+      throw ArgumentError('WebViewRequest#uri is required to have a scheme.');
+    }
+    if (!await _shouldLoadUrl(params.uri.toString())) {
+      return;
+    }
+    return _loadRequest(params);
+  }
+
+  Future<void> _loadRequest(
+    LoadRequestParams params,
+  ) {    if (!params.uri.hasScheme) {
       throw ArgumentError('WebViewRequest#uri is required to have a scheme.');
     }
     switch (params.method) {
@@ -507,10 +535,22 @@ class AndroidWebViewController extends PlatformWebViewController {
   Future<void> setPlatformNavigationDelegate(covariant AndroidNavigationDelegate handler) async {
     _currentNavigationDelegate = handler;
     await Future.wait(<Future<void>>[
-      handler.setOnLoadRequest(loadRequest),
+      handler.setOnLoadRequest(_loadRequest),
       _webView.setWebViewClient(handler.androidWebViewClient),
       _webView.setDownloadListener(handler.androidDownloadListener),
     ]);
+  }
+
+  Future<bool> _shouldLoadUrl(String url) async {
+    if (_currentNavigationDelegate == null) {
+      return true;
+    }
+    final NavigationDecision decision =
+        await _currentNavigationDelegate!.requestNavigation(NavigationRequest(
+      url: url,
+      isMainFrame: true,
+    ));
+    return decision == NavigationDecision.navigate;
   }
 
   @override
@@ -1060,9 +1100,10 @@ class AndroidWebViewWidgetCreationParams extends PlatformWebViewWidgetCreationPa
   AndroidWebViewWidgetCreationParams.fromPlatformWebViewWidgetCreationParams(
     PlatformWebViewWidgetCreationParams params, {
     bool displayWithHybridComposition = false,
+    @visibleForTesting android_webview.PigeonInstanceManager? instanceManager,
     @visibleForTesting
-    PlatformViewsServiceProxy platformViewsServiceProxy = const PlatformViewsServiceProxy(),
-  }) : this(
+    PlatformViewsServiceProxy platformViewsServiceProxy =
+        const PlatformViewsServiceProxy(),  }) : this(
          key: params.key,
          controller: params.controller,
          layoutDirection: params.layoutDirection,
@@ -1597,6 +1638,17 @@ class AndroidNavigationDelegate extends PlatformNavigationDelegate {
   /// Invoked when loading the url after a navigation request is approved.
   Future<void> setOnLoadRequest(LoadRequestCallback onLoadRequest) async {
     _onLoadRequest = onLoadRequest;
+  }
+
+  /// Invoked by [AndroidWebViewController] to check if a programmatic navigation
+  /// request should be allowed.
+  Future<NavigationDecision> requestNavigation(
+      NavigationRequest request) async {
+    final NavigationRequestCallback? onNavigationRequest = _onNavigationRequest;
+    if (onNavigationRequest == null) {
+      return NavigationDecision.navigate;
+    }
+    return onNavigationRequest(request);
   }
 
   @override

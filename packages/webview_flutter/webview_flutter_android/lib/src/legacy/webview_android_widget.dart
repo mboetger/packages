@@ -252,12 +252,15 @@ class WebViewAndroidPlatformController extends WebViewPlatformController {
   }
 
   @override
-  Future<void> loadFile(String absoluteFilePath) {
-    final url = absoluteFilePath.startsWith('file://')
-        ? absoluteFilePath
+  Future<void> loadFile(String absoluteFilePath) async {
+    final String url = absoluteFilePath.startsWith('file://')        ? absoluteFilePath
         : 'file://$absoluteFilePath';
 
-    webView.settings.setAllowFileAccess(true);
+    if (!await _shouldLoadUrl(url)) {
+      return;
+    }
+
+    await webView.settings.setAllowFileAccess(true);
     return webView.loadUrl(url, <String, String>{});
   }
 
@@ -272,13 +275,26 @@ class WebViewAndroidPlatformController extends WebViewPlatformController {
       throw ArgumentError('Asset for key "$key" not found.', 'key');
     }
 
-    return webView.loadUrl('file:///android_asset/$assetFilePath', <String, String>{});
+    final String url = 'file:///android_asset/$assetFilePath';
+    if (!await _shouldLoadUrl(url)) {
+      return;
+    }
+
+    return webView.loadUrl(
+      url,
+      <String, String>{},
+    );
   }
 
   @override
-  Future<void> loadUrl(String url, Map<String, String>? headers) {
-    return webView.loadUrl(url, headers ?? <String, String>{});
-  }
+  Future<void> loadUrl(
+    String url,
+    Map<String, String>? headers,
+  ) async {
+    if (!await _shouldLoadUrl(url)) {
+      return;
+    }
+    return _loadUrl(url, headers);  }
 
   /// When making a POST request, headers are ignored. As a workaround, make
   /// the request manually and load the response data using [loadHTMLString].
@@ -286,6 +302,9 @@ class WebViewAndroidPlatformController extends WebViewPlatformController {
   Future<void> loadRequest(WebViewRequest request) async {
     if (!request.uri.hasScheme) {
       throw ArgumentError('WebViewRequest#uri is required to have a scheme.');
+    }
+    if (!await _shouldLoadUrl(request.uri.toString())) {
+      return;
     }
     switch (request.method) {
       case WebViewRequestMethod.get:
@@ -507,8 +526,27 @@ class WebViewAndroidPlatformController extends WebViewPlatformController {
     throw ArgumentError('Could not find a WebResourceErrorType for errorCode: $errorCode');
   }
 
-  void _handleNavigationRequest({required String url, required bool isForMainFrame}) {
+  Future<bool> _shouldLoadUrl(String url) async {
     if (!_hasNavigationDelegate) {
+      return true;
+    }
+    return callbacksHandler.onNavigationRequest(
+      url: url,
+      isForMainFrame: true,
+    );
+  }
+
+  Future<void> _loadUrl(
+    String url,
+    Map<String, String>? headers,
+  ) {
+    return webView.loadUrl(url, headers ?? <String, String>{});
+  }
+
+  void _handleNavigationRequest({
+    required String url,
+    required bool isForMainFrame,
+  }) {    if (!_hasNavigationDelegate) {
       return;
     }
 
@@ -518,11 +556,11 @@ class WebViewAndroidPlatformController extends WebViewPlatformController {
     );
 
     if (returnValue is bool && returnValue) {
-      loadUrl(url, <String, String>{});
+      _loadUrl(url, <String, String>{});
     } else if (returnValue is Future<bool>) {
       returnValue.then((bool shouldLoadUrl) {
         if (shouldLoadUrl) {
-          loadUrl(url, <String, String>{});
+          _loadUrl(url, <String, String>{});
         }
       });
     }
