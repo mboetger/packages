@@ -20,6 +20,20 @@ class MarkerController implements MarkerOptionsSink {
   private final WeakReference<Marker> weakMarker;
   private final String googleMapsMarkerId;
   private boolean consumeTapEvents;
+  private Float alpha;
+  private Float anchorU;
+  private Float anchorV;
+  private Boolean draggable;
+  private Boolean flat;
+  private BitmapDescriptor icon;
+  private Float infoWindowAnchorU;
+  private Float infoWindowAnchorV;
+  private String title;
+  private String snippet;
+  private LatLng position;
+  private Float rotation;
+  private Boolean visible;
+  private Float zIndex;
 
   MarkerController(Marker marker, boolean consumeTapEvents) {
     this.weakMarker = new WeakReference<>(marker);
@@ -41,6 +55,10 @@ class MarkerController implements MarkerOptionsSink {
     if (marker == null) {
       return;
     }
+    if (this.alpha != null && Float.compare(this.alpha, alpha) == 0) {
+      return;
+    }
+    this.alpha = alpha;
     marker.setAlpha(alpha);
   }
 
@@ -50,6 +68,14 @@ class MarkerController implements MarkerOptionsSink {
     if (marker == null) {
       return;
     }
+    if (this.anchorU != null
+        && this.anchorV != null
+        && Float.compare(this.anchorU, u) == 0
+        && Float.compare(this.anchorV, v) == 0) {
+      return;
+    }
+    this.anchorU = u;
+    this.anchorV = v;
     marker.setAnchor(u, v);
   }
 
@@ -57,6 +83,9 @@ class MarkerController implements MarkerOptionsSink {
   public void setConsumeTapEvents(boolean consumeTapEvents) {
     Marker marker = weakMarker.get();
     if (marker == null) {
+      return;
+    }
+    if (this.consumeTapEvents == consumeTapEvents) {
       return;
     }
     this.consumeTapEvents = consumeTapEvents;
@@ -68,6 +97,10 @@ class MarkerController implements MarkerOptionsSink {
     if (marker == null) {
       return;
     }
+    if (this.draggable != null && this.draggable == draggable) {
+      return;
+    }
+    this.draggable = draggable;
     marker.setDraggable(draggable);
   }
 
@@ -77,6 +110,10 @@ class MarkerController implements MarkerOptionsSink {
     if (marker == null) {
       return;
     }
+    if (this.flat != null && this.flat == flat) {
+      return;
+    }
+    this.flat = flat;
     marker.setFlat(flat);
   }
 
@@ -86,6 +123,10 @@ class MarkerController implements MarkerOptionsSink {
     if (marker == null) {
       return;
     }
+    if (java.util.Objects.equals(this.icon, bitmapDescriptor)) {
+      return;
+    }
+    this.icon = bitmapDescriptor;
     marker.setIcon(bitmapDescriptor);
   }
 
@@ -95,6 +136,14 @@ class MarkerController implements MarkerOptionsSink {
     if (marker == null) {
       return;
     }
+    if (this.infoWindowAnchorU != null
+        && this.infoWindowAnchorV != null
+        && Float.compare(this.infoWindowAnchorU, u) == 0
+        && Float.compare(this.infoWindowAnchorV, v) == 0) {
+      return;
+    }
+    this.infoWindowAnchorU = u;
+    this.infoWindowAnchorV = v;
     marker.setInfoWindowAnchor(u, v);
   }
 
@@ -104,6 +153,12 @@ class MarkerController implements MarkerOptionsSink {
     if (marker == null) {
       return;
     }
+    if (java.util.Objects.equals(this.title, title)
+        && java.util.Objects.equals(this.snippet, snippet)) {
+      return;
+    }
+    this.title = title;
+    this.snippet = snippet;
     marker.setTitle(title);
     marker.setSnippet(snippet);
   }
@@ -114,6 +169,10 @@ class MarkerController implements MarkerOptionsSink {
     if (marker == null) {
       return;
     }
+    if (java.util.Objects.equals(this.position, position)) {
+      return;
+    }
+    this.position = position;
     marker.setPosition(position);
   }
 
@@ -123,6 +182,10 @@ class MarkerController implements MarkerOptionsSink {
     if (marker == null) {
       return;
     }
+    if (this.rotation != null && Float.compare(this.rotation, rotation) == 0) {
+      return;
+    }
+    this.rotation = rotation;
     marker.setRotation(rotation);
   }
 
@@ -132,6 +195,10 @@ class MarkerController implements MarkerOptionsSink {
     if (marker == null) {
       return;
     }
+    if (this.visible != null && this.visible == visible) {
+      return;
+    }
+    this.visible = visible;
     marker.setVisible(visible);
   }
 
@@ -141,6 +208,10 @@ class MarkerController implements MarkerOptionsSink {
     if (marker == null) {
       return;
     }
+    if (this.zIndex != null && Float.compare(this.zIndex, zIndex) == 0) {
+      return;
+    }
+    this.zIndex = zIndex;
     marker.setZIndex(zIndex);
   }
 

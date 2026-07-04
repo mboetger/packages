@@ -10,6 +10,10 @@ import com.google.android.gms.maps.model.TileProvider;
 class TileOverlayController implements TileOverlaySink {
 
   private final TileOverlay tileOverlay;
+  private Boolean fadeIn;
+  private Float transparency;
+  private Float zIndex;
+  private Boolean visible;
 
   TileOverlayController(TileOverlay tileOverlay) {
     this.tileOverlay = tileOverlay;
@@ -29,21 +33,37 @@ class TileOverlayController implements TileOverlaySink {
 
   @Override
   public void setFadeIn(boolean fadeIn) {
+    if (this.fadeIn != null && this.fadeIn == fadeIn) {
+      return;
+    }
+    this.fadeIn = fadeIn;
     tileOverlay.setFadeIn(fadeIn);
   }
 
   @Override
   public void setTransparency(float transparency) {
+    if (this.transparency != null && Float.compare(this.transparency, transparency) == 0) {
+      return;
+    }
+    this.transparency = transparency;
     tileOverlay.setTransparency(transparency);
   }
 
   @Override
   public void setZIndex(float zIndex) {
+    if (this.zIndex != null && Float.compare(this.zIndex, zIndex) == 0) {
+      return;
+    }
+    this.zIndex = zIndex;
     tileOverlay.setZIndex(zIndex);
   }
 
   @Override
   public void setVisible(boolean visible) {
+    if (this.visible != null && this.visible == visible) {
+      return;
+    }
+    this.visible = visible;
     tileOverlay.setVisible(visible);
   }
 

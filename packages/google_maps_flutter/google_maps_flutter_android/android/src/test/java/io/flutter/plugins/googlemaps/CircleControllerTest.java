@@ -26,4 +26,36 @@ public class CircleControllerTest {
 
     Mockito.verify(circle).setStrokeWidth(density * strokeWidth);
   }
+
+  @Test
+  public void controller_DoesNotCallSetFillColorWhenUnchanged() {
+    final zzl z = mock(zzl.class);
+    final Circle circle = spy(new Circle(z));
+    final CircleController controller = new CircleController(circle, false, 1.0f);
+
+    controller.setFillColor(12345);
+    Mockito.verify(circle, Mockito.times(1)).setFillColor(12345);
+
+    controller.setFillColor(12345);
+    Mockito.verify(circle, Mockito.times(1)).setFillColor(12345);
+
+    controller.setFillColor(54321);
+    Mockito.verify(circle, Mockito.times(1)).setFillColor(54321);
+  }
+
+  @Test
+  public void controller_DoesNotCallSetRadiusWhenUnchanged() {
+    final zzl z = mock(zzl.class);
+    final Circle circle = spy(new Circle(z));
+    final CircleController controller = new CircleController(circle, false, 1.0f);
+
+    controller.setRadius(100.0);
+    Mockito.verify(circle, Mockito.times(1)).setRadius(100.0);
+
+    controller.setRadius(100.0);
+    Mockito.verify(circle, Mockito.times(1)).setRadius(100.0);
+
+    controller.setRadius(200.0);
+    Mockito.verify(circle, Mockito.times(1)).setRadius(200.0);
+  }
 }
