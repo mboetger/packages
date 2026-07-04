@@ -52,7 +52,9 @@
 
 * Fixes memory leak by disposing stream subscriptions in `GoogleMapController`.
 * Updates README to indicate that Andoid SDK <21 is no longer supported.
+## 2.13.0
 
+* Adds `LatLngBounds.fromPoints` constructor to create bounding boxes from collections of points without antimeridian crossing bugs.
 ## 2.12.1
 
 * Fixes typo in README.

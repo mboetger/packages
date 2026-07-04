@@ -33,7 +33,9 @@
 
 * Deprecates `zIndex` parameter in `Marker` in favor of `zIndexInt`.
 * Updates minimum supported SDK version to Flutter 3.27/Dart 3.6.
+## 2.12.0
 
+* Adds `LatLngBounds.fromPoints` constructor to create bounding boxes from collections of points without antimeridian crossing bugs.
 ## 2.11.1
 
 * Updates READMEs and API docs.

@@ -71,6 +71,45 @@ class LatLngBounds {
   LatLngBounds({required this.southwest, required this.northeast})
     : assert(southwest.latitude <= northeast.latitude);
 
+  /// Creates a [LatLngBounds] that encloses all given [points].
+  ///
+  /// The [points] collection must not be empty.
+  factory LatLngBounds.fromPoints(Iterable<LatLng> points) {
+    assert(points.isNotEmpty, 'points must not be empty');
+    double? minLat;
+    double? maxLat;
+    double? southwestLng;
+    double? northeastLng;
+
+    for (final LatLng point in points) {
+      if (minLat == null || point.latitude < minLat) {
+        minLat = point.latitude;
+      }
+      if (maxLat == null || point.latitude > maxLat) {
+        maxLat = point.latitude;
+      }
+
+      if (southwestLng == null || northeastLng == null) {
+        southwestLng = point.longitude;
+        northeastLng = point.longitude;
+      } else if (!_computeContainsLongitude(
+          southwestLng, northeastLng, point.longitude)) {
+        final double dWest = (southwestLng - point.longitude) % 360.0;
+        final double dEast = (point.longitude - northeastLng) % 360.0;
+        if (dWest < dEast) {
+          southwestLng = point.longitude;
+        } else {
+          northeastLng = point.longitude;
+        }
+      }
+    }
+
+    return LatLngBounds(
+      southwest: LatLng(minLat!, southwestLng!),
+      northeast: LatLng(maxLat!, northeastLng!),
+    );
+  }
+
   /// The southwest corner of the rectangle.
   final LatLng southwest;
 
@@ -92,10 +131,16 @@ class LatLngBounds {
   }
 
   bool _containsLongitude(double lng) {
-    if (southwest.longitude <= northeast.longitude) {
-      return southwest.longitude <= lng && lng <= northeast.longitude;
+    return _computeContainsLongitude(
+        southwest.longitude, northeast.longitude, lng);
+  }
+
+  static bool _computeContainsLongitude(
+      double southwestLng, double northeastLng, double lng) {
+    if (southwestLng <= northeastLng) {
+      return southwestLng <= lng && lng <= northeastLng;
     } else {
-      return southwest.longitude <= lng || lng <= northeast.longitude;
+      return southwestLng <= lng || lng <= northeastLng;
     }
   }
 
