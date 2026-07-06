@@ -47,6 +47,22 @@ public class WebViewProxyApi extends PigeonApiWebView {
 
       setWebViewClient(currentWebViewClient);
       setWebChromeClient(currentWebChromeClient);
+
+      setOnLongClickListener(
+          view -> {
+            WebView.HitTestResult hitTestResult = getHitTestResult();
+            if (hitTestResult != null
+                && (hitTestResult.getType() == WebView.HitTestResult.IMAGE_TYPE
+                    || hitTestResult.getType() == WebView.HitTestResult.SRC_IMAGE_ANCHOR_TYPE)) {
+              String url = hitTestResult.getExtra();
+              if (url != null) {
+                api.getPigeonRegistrar()
+                    .runOnMainThread(() -> api.onLongPressImage(this, url, reply -> null));
+                return true;
+              }
+            }
+            return false;
+          });
     }
 
     @Nullable
@@ -185,6 +201,12 @@ public class WebViewProxyApi extends PigeonApiWebView {
   @Override
   public String getUrl(@NonNull WebView pigeon_instance) {
     return pigeon_instance.getUrl();
+  }
+
+  @Nullable
+  @Override
+  public WebView.HitTestResult getHitTestResult(@NonNull WebView pigeon_instance) {
+    return pigeon_instance.getHitTestResult();
   }
 
   @Override

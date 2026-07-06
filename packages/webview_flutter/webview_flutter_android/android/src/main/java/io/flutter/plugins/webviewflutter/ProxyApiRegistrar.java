@@ -94,6 +94,12 @@ public class ProxyApiRegistrar extends AndroidWebkitLibraryPigeonProxyApiRegistr
 
   @NonNull
   @Override
+  public PigeonApiWebViewHitTestResult getPigeonApiWebViewHitTestResult() {
+    return new WebViewHitTestResultProxyApi(this);
+  }
+
+  @NonNull
+  @Override
   public PigeonApiConsoleMessage getPigeonApiConsoleMessage() {
     return new ConsoleMessageProxyApi(this);
   }

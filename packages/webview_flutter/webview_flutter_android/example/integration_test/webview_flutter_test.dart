@@ -124,8 +124,14 @@ Future<void> main() async {
       });
 
       android_webkit.PigeonOverrides.webView_new =
-          ({void Function(android_webkit.WebView, int, int, int, int)? onScrollChanged}) {
-            final webView = android_webkit.WebView(onScrollChanged: onScrollChanged);
+          ({
+            void Function(android_webkit.WebView, int, int, int, int)? onScrollChanged,
+            void Function(android_webkit.WebView, String)? onLongPressImage,
+          }) {
+            final webView = android_webkit.WebView(
+              onScrollChanged: onScrollChanged,
+              onLongPressImage: onLongPressImage,
+            );
             finalizer.attach(webView, webViewToken);
             return webView;
           };

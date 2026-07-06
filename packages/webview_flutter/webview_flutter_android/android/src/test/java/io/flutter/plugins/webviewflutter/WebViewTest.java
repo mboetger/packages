@@ -130,6 +130,17 @@ public class WebViewTest {
   }
 
   @Test
+  public void getHitTestResult() {
+    final PigeonApiWebView api = new TestProxyApiRegistrar().getPigeonApiWebView();
+
+    final WebView instance = mock(WebView.class);
+    final WebView.HitTestResult value = mock(WebView.HitTestResult.class);
+    when(instance.getHitTestResult()).thenReturn(value);
+
+    assertEquals(value, api.getHitTestResult(instance));
+  }
+
+  @Test
   public void canGoBack() {
     final PigeonApiWebView api = new TestProxyApiRegistrar().getPigeonApiWebView();
 

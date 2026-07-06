@@ -386,6 +386,14 @@ class MockWebView extends _i1.Mock implements _i2.WebView {
           as _i2.WebSettings);
 
   @override
+  _i4.Future<_i2.WebViewHitTestResult?> getHitTestResult() =>
+      (super.noSuchMethod(
+            Invocation.method(#getHitTestResult, []),
+            returnValue: _i4.Future<_i2.WebViewHitTestResult?>.value(),
+          )
+          as _i4.Future<_i2.WebViewHitTestResult?>);
+
+  @override
   _i4.Future<void> loadData(String? data, String? mimeType, String? encoding) =>
       (super.noSuchMethod(
             Invocation.method(#loadData, [data, mimeType, encoding]),

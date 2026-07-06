@@ -287,6 +287,55 @@ abstract class CookieManager {
   String? getCookies(String url);
 }
 
+/// Represents the type of target hit in a [WebViewHitTestResult].
+///
+/// See https://developer.android.com/reference/android/webkit/WebView.HitTestResult.
+enum WebViewHitTestResultType {
+  /// Unknown target type.
+  unknown,
+
+  /// Target is an anchor (link).
+  anchor,
+
+  /// Target is a phone number.
+  phone,
+
+  /// Target is a geographic address.
+  geo,
+
+  /// Target is an email address.
+  email,
+
+  /// Target is an image.
+  image,
+
+  /// Target is an image with an anchor.
+  imageAnchor,
+
+  /// Target is a source anchor.
+  srcAnchor,
+
+  /// Target is a source image anchor.
+  srcImageAnchor,
+
+  /// Target is an editable text field.
+  editText,
+}
+
+/// Represents the result of a hit test on a [WebView].
+///
+/// See https://developer.android.com/reference/android/webkit/WebView.HitTestResult.
+@ProxyApi(
+  kotlinOptions: KotlinProxyApiOptions(fullClassName: 'android.webkit.WebView.HitTestResult'),
+)
+abstract class WebViewHitTestResult {
+  /// Gets the type of the hit test result.
+  WebViewHitTestResultType getType();
+
+  /// Gets additional information about the hit test result.
+  String? getExtra();
+}
+
 /// A View that displays web pages.
 ///
 /// See https://developer.android.com/reference/android/webkit/WebView.
@@ -298,9 +347,15 @@ abstract class WebView extends View {
   /// view scrolled its own contents).
   late void Function(int left, int top, int oldLeft, int oldTop)? onScrollChanged;
 
+  /// Callback invoked when an image is long-pressed in the WebView.
+  late void Function(String url)? onLongPressImage;
+
   /// The WebSettings object used to control the settings for this WebView.
   @attached
   late WebSettings settings;
+
+  /// Gets the hit test result for the current touch or long-click event.
+  WebViewHitTestResult? getHitTestResult();
 
   /// Loads the given data into this WebView using a 'data' scheme URL.
   void loadData(String data, String? mimeType, String? encoding);

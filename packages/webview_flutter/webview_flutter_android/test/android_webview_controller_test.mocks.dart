@@ -138,6 +138,11 @@ class _FakeWebStorage_20 extends _i1.SmartFake implements _i2.WebStorage {
   _FakeWebStorage_20(Object parent, Invocation parentInvocation) : super(parent, parentInvocation);
 }
 
+class _FakeWebViewHitTestResult_21 extends _i1.SmartFake implements _i2.WebViewHitTestResult {
+  _FakeWebViewHitTestResult_21(Object parent, Invocation parentInvocation)
+    : super(parent, parentInvocation);
+}
+
 /// A class which mocks [AndroidNavigationDelegate].
 ///
 /// See the documentation for Mockito's code generation for more information.
@@ -316,6 +321,24 @@ class MockAndroidWebViewController extends _i1.Mock implements _i7.AndroidWebVie
   _i8.Future<void> setAllowFileAccess(bool? allow) =>
       (super.noSuchMethod(
             Invocation.method(#setAllowFileAccess, [allow]),
+            returnValue: _i8.Future<void>.value(),
+            returnValueForMissingStub: _i8.Future<void>.value(),
+          )
+          as _i8.Future<void>);
+
+  @override
+  _i8.Future<_i2.WebViewHitTestResult?> getHitTestResult() =>
+      (super.noSuchMethod(
+            Invocation.method(#getHitTestResult, []),
+            returnValue: _i8.Future<_i2.WebViewHitTestResult?>.value(),
+            returnValueForMissingStub: _i8.Future<_i2.WebViewHitTestResult?>.value(),
+          )
+          as _i8.Future<_i2.WebViewHitTestResult?>);
+
+  @override
+  _i8.Future<void> enableLongPressSaveImage() =>
+      (super.noSuchMethod(
+            Invocation.method(#enableLongPressSaveImage, []),
             returnValue: _i8.Future<void>.value(),
             returnValueForMissingStub: _i8.Future<void>.value(),
           )
@@ -782,6 +805,15 @@ class MockAndroidWebViewController extends _i1.Mock implements _i7.AndroidWebVie
   _i8.Future<void> setPaymentRequestEnabled(bool? enabled) =>
       (super.noSuchMethod(
             Invocation.method(#setPaymentRequestEnabled, [enabled]),
+            returnValue: _i8.Future<void>.value(),
+            returnValueForMissingStub: _i8.Future<void>.value(),
+          )
+          as _i8.Future<void>);
+
+  @override
+  _i8.Future<void> setInsetsForWebContentToIgnore(List<_i7.AndroidWebViewInsets>? insets) =>
+      (super.noSuchMethod(
+            Invocation.method(#setInsetsForWebContentToIgnore, [insets]),
             returnValue: _i8.Future<void>.value(),
             returnValueForMissingStub: _i8.Future<void>.value(),
           )
@@ -1812,6 +1844,15 @@ class MockWebView extends _i1.Mock implements _i2.WebView {
           as _i2.WebSettings);
 
   @override
+  _i8.Future<_i2.WebViewHitTestResult?> getHitTestResult() =>
+      (super.noSuchMethod(
+            Invocation.method(#getHitTestResult, []),
+            returnValue: _i8.Future<_i2.WebViewHitTestResult?>.value(),
+            returnValueForMissingStub: _i8.Future<_i2.WebViewHitTestResult?>.value(),
+          )
+          as _i8.Future<_i2.WebViewHitTestResult?>);
+
+  @override
   _i8.Future<void> loadData(String? data, String? mimeType, String? encoding) =>
       (super.noSuchMethod(
             Invocation.method(#loadData, [data, mimeType, encoding]),
@@ -2160,4 +2201,58 @@ class MockWebStorage extends _i1.Mock implements _i2.WebStorage {
             ),
           )
           as _i2.WebStorage);
+}
+
+/// A class which mocks [WebViewHitTestResult].
+///
+/// See the documentation for Mockito's code generation for more information.
+class MockWebViewHitTestResult extends _i1.Mock implements _i2.WebViewHitTestResult {
+  @override
+  _i2.PigeonInstanceManager get pigeon_instanceManager =>
+      (super.noSuchMethod(
+            Invocation.getter(#pigeon_instanceManager),
+            returnValue: _FakePigeonInstanceManager_10(
+              this,
+              Invocation.getter(#pigeon_instanceManager),
+            ),
+            returnValueForMissingStub: _FakePigeonInstanceManager_10(
+              this,
+              Invocation.getter(#pigeon_instanceManager),
+            ),
+          )
+          as _i2.PigeonInstanceManager);
+
+  @override
+  _i8.Future<_i2.WebViewHitTestResultType> getType() =>
+      (super.noSuchMethod(
+            Invocation.method(#getType, []),
+            returnValue: _i8.Future<_i2.WebViewHitTestResultType>.value(
+              _i2.WebViewHitTestResultType.unknown,
+            ),
+            returnValueForMissingStub: _i8.Future<_i2.WebViewHitTestResultType>.value(
+              _i2.WebViewHitTestResultType.unknown,
+            ),
+          )
+          as _i8.Future<_i2.WebViewHitTestResultType>);
+
+  @override
+  _i8.Future<String?> getExtra() =>
+      (super.noSuchMethod(
+            Invocation.method(#getExtra, []),
+            returnValue: _i8.Future<String?>.value(),
+            returnValueForMissingStub: _i8.Future<String?>.value(),
+          )
+          as _i8.Future<String?>);
+
+  @override
+  _i2.WebViewHitTestResult pigeon_copy() =>
+      (super.noSuchMethod(
+            Invocation.method(#pigeon_copy, []),
+            returnValue: _FakeWebViewHitTestResult_21(this, Invocation.method(#pigeon_copy, [])),
+            returnValueForMissingStub: _FakeWebViewHitTestResult_21(
+              this,
+              Invocation.method(#pigeon_copy, []),
+            ),
+          )
+          as _i2.WebViewHitTestResult);
 }

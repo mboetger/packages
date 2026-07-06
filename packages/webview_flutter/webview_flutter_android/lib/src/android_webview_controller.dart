@@ -169,6 +169,16 @@ class AndroidWebViewController extends PlatformWebViewController {
         callback?.call(ScrollPositionChange(left.toDouble(), top.toDouble()));
       };
     }),
+    onLongPressImage: withWeakReferenceTo(this, (
+      WeakReference<AndroidWebViewController> weakReference,
+    ) {
+      return (_, String url) {
+        final AndroidWebViewController? controller = weakReference.target;
+        if (controller != null && controller._longPressSaveImageEnabled) {
+          controller._currentNavigationDelegate?._handleNavigation(url, isForMainFrame: true);
+        }
+      };
+    }),
   );
 
   late final android_webview.WebChromeClient _webChromeClient = android_webview.WebChromeClient(
@@ -413,6 +423,16 @@ class AndroidWebViewController extends PlatformWebViewController {
   /// See Java method `WebViewFlutterPlugin.getWebView`.
   int get webViewIdentifier =>
       android_webview.PigeonInstanceManager.instance.getIdentifier(_webView)!;
+
+  bool _longPressSaveImageEnabled = false;
+
+  /// Gets the hit test result for the current touch or long-click event.
+  Future<android_webview.WebViewHitTestResult?> getHitTestResult() => _webView.getHitTestResult();
+
+  /// Enables saving an image when long pressing on it in the WebView.
+  Future<void> enableLongPressSaveImage() async {
+    _longPressSaveImageEnabled = true;
+  }
 
   @override
   Future<void> loadFile(String absoluteFilePath) {
@@ -1174,6 +1194,12 @@ class AndroidWebViewWidget extends PlatformWebViewWidget {
         },
       );
     }
+  }
+
+  /// Enables saving images on long-press in the WebView.
+  Future<void> enableLongPressSaveImage() async {
+    final androidController = _androidParams.controller as AndroidWebViewController;
+    await androidController.enableLongPressSaveImage();
   }
 }
 

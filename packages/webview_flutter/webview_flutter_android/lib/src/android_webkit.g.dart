@@ -62,6 +62,7 @@ class PigeonOverrides {
   static WebView Function({
     void Function(WebView pigeon_instance, int left, int top, int oldLeft, int oldTop)?
     onScrollChanged,
+    void Function(WebView pigeon_instance, String url)? onLongPressImage,
   })?
   webView_new;
 
@@ -349,6 +350,7 @@ class PigeonInstanceManager {
     WebViewPoint.pigeon_setUpMessageHandlers(pigeon_instanceManager: instanceManager);
     ConsoleMessage.pigeon_setUpMessageHandlers(pigeon_instanceManager: instanceManager);
     CookieManager.pigeon_setUpMessageHandlers(pigeon_instanceManager: instanceManager);
+    WebViewHitTestResult.pigeon_setUpMessageHandlers(pigeon_instanceManager: instanceManager);
     WebView.pigeon_setUpMessageHandlers(pigeon_instanceManager: instanceManager);
     WebSettings.pigeon_setUpMessageHandlers(pigeon_instanceManager: instanceManager);
     JavaScriptChannel.pigeon_setUpMessageHandlers(pigeon_instanceManager: instanceManager);
@@ -766,6 +768,41 @@ enum WindowInsetsType {
   tappableElement,
 }
 
+/// Represents the type of target hit in a [WebViewHitTestResult].
+///
+/// See https://developer.android.com/reference/android/webkit/WebView.HitTestResult.
+enum WebViewHitTestResultType {
+  /// Unknown target type.
+  unknown,
+
+  /// Target is an anchor (link).
+  anchor,
+
+  /// Target is a phone number.
+  phone,
+
+  /// Target is a geographic address.
+  geo,
+
+  /// Target is an email address.
+  email,
+
+  /// Target is an image.
+  image,
+
+  /// Target is an image with an anchor.
+  imageAnchor,
+
+  /// Target is a source anchor.
+  srcAnchor,
+
+  /// Target is a source image anchor.
+  srcImageAnchor,
+
+  /// Target is an editable text field.
+  editText,
+}
+
 class _PigeonCodec extends StandardMessageCodec {
   const _PigeonCodec();
   @override
@@ -790,6 +827,9 @@ class _PigeonCodec extends StandardMessageCodec {
       writeValue(buffer, value.index);
     } else if (value is WindowInsetsType) {
       buffer.putUint8(134);
+      writeValue(buffer, value.index);
+    } else if (value is WebViewHitTestResultType) {
+      buffer.putUint8(135);
       writeValue(buffer, value.index);
     } else {
       super.writeValue(buffer, value);
@@ -817,6 +857,9 @@ class _PigeonCodec extends StandardMessageCodec {
       case 134:
         final value = readValue(buffer) as int?;
         return value == null ? null : WindowInsetsType.values[value];
+      case 135:
+        final value = readValue(buffer) as int?;
+        return value == null ? null : WebViewHitTestResultType.values[value];
       default:
         return super.readValueOfType(type, buffer);
     }
@@ -1553,6 +1596,122 @@ class CookieManager extends PigeonInternalProxyApiBaseClass {
   }
 }
 
+/// Represents the result of a hit test on a [WebView].
+///
+/// See https://developer.android.com/reference/android/webkit/WebView.HitTestResult.
+class WebViewHitTestResult extends PigeonInternalProxyApiBaseClass {
+  /// Constructs [WebViewHitTestResult] without creating the associated native object.
+  ///
+  /// This should only be used by subclasses created by this library or to
+  /// create copies for an [PigeonInstanceManager].
+  @protected
+  WebViewHitTestResult.pigeon_detached({
+    super.pigeon_binaryMessenger,
+    super.pigeon_instanceManager,
+  });
+
+  late final _PigeonInternalProxyApiBaseCodec _pigeonVar_codecWebViewHitTestResult =
+      _PigeonInternalProxyApiBaseCodec(pigeon_instanceManager);
+
+  static void pigeon_setUpMessageHandlers({
+    bool pigeon_clearHandlers = false,
+    BinaryMessenger? pigeon_binaryMessenger,
+    PigeonInstanceManager? pigeon_instanceManager,
+    WebViewHitTestResult Function()? pigeon_newInstance,
+  }) {
+    final _PigeonInternalProxyApiBaseCodec pigeonChannelCodec = _PigeonInternalProxyApiBaseCodec(
+      pigeon_instanceManager ?? PigeonInstanceManager.instance,
+    );
+    final BinaryMessenger? binaryMessenger = pigeon_binaryMessenger;
+    {
+      final pigeonVar_channel = BasicMessageChannel<Object?>(
+        'dev.flutter.pigeon.webview_flutter_android.WebViewHitTestResult.pigeon_newInstance',
+        pigeonChannelCodec,
+        binaryMessenger: binaryMessenger,
+      );
+      if (pigeon_clearHandlers) {
+        pigeonVar_channel.setMessageHandler(null);
+      } else {
+        pigeonVar_channel.setMessageHandler((Object? message) async {
+          final List<Object?> args = message! as List<Object?>;
+          final int arg_pigeon_instanceIdentifier = args[0]! as int;
+          try {
+            (pigeon_instanceManager ?? PigeonInstanceManager.instance).addHostCreatedInstance(
+              pigeon_newInstance?.call() ??
+                  WebViewHitTestResult.pigeon_detached(
+                    pigeon_binaryMessenger: pigeon_binaryMessenger,
+                    pigeon_instanceManager: pigeon_instanceManager,
+                  ),
+              arg_pigeon_instanceIdentifier,
+            );
+            return wrapResponse(empty: true);
+          } on PlatformException catch (e) {
+            return wrapResponse(error: e);
+          } catch (e) {
+            return wrapResponse(
+              error: PlatformException(code: 'error', message: e.toString()),
+            );
+          }
+        });
+      }
+    }
+  }
+
+  /// Gets the type of the hit test result.
+  Future<WebViewHitTestResultType> getType() async {
+    final _PigeonInternalProxyApiBaseCodec pigeonChannelCodec =
+        _pigeonVar_codecWebViewHitTestResult;
+    final BinaryMessenger? pigeonVar_binaryMessenger = pigeon_binaryMessenger;
+    const pigeonVar_channelName =
+        'dev.flutter.pigeon.webview_flutter_android.WebViewHitTestResult.getType';
+    final pigeonVar_channel = BasicMessageChannel<Object?>(
+      pigeonVar_channelName,
+      pigeonChannelCodec,
+      binaryMessenger: pigeonVar_binaryMessenger,
+    );
+    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(<Object?>[this]);
+    final pigeonVar_replyList = await pigeonVar_sendFuture as List<Object?>?;
+
+    final Object? pigeonVar_replyValue = _extractReplyValueOrThrow(
+      pigeonVar_replyList,
+      pigeonVar_channelName,
+      isNullValid: false,
+    );
+    return pigeonVar_replyValue! as WebViewHitTestResultType;
+  }
+
+  /// Gets additional information about the hit test result.
+  Future<String?> getExtra() async {
+    final _PigeonInternalProxyApiBaseCodec pigeonChannelCodec =
+        _pigeonVar_codecWebViewHitTestResult;
+    final BinaryMessenger? pigeonVar_binaryMessenger = pigeon_binaryMessenger;
+    const pigeonVar_channelName =
+        'dev.flutter.pigeon.webview_flutter_android.WebViewHitTestResult.getExtra';
+    final pigeonVar_channel = BasicMessageChannel<Object?>(
+      pigeonVar_channelName,
+      pigeonChannelCodec,
+      binaryMessenger: pigeonVar_binaryMessenger,
+    );
+    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(<Object?>[this]);
+    final pigeonVar_replyList = await pigeonVar_sendFuture as List<Object?>?;
+
+    final Object? pigeonVar_replyValue = _extractReplyValueOrThrow(
+      pigeonVar_replyList,
+      pigeonVar_channelName,
+      isNullValid: true,
+    );
+    return pigeonVar_replyValue as String?;
+  }
+
+  @override
+  WebViewHitTestResult pigeon_copy() {
+    return WebViewHitTestResult.pigeon_detached(
+      pigeon_binaryMessenger: pigeon_binaryMessenger,
+      pigeon_instanceManager: pigeon_instanceManager,
+    );
+  }
+}
+
 /// A View that displays web pages.
 ///
 /// See https://developer.android.com/reference/android/webkit/WebView.
@@ -1562,14 +1721,19 @@ class WebView extends View {
     PigeonInstanceManager? pigeon_instanceManager,
     void Function(WebView pigeon_instance, int left, int top, int oldLeft, int oldTop)?
     onScrollChanged,
+    void Function(WebView pigeon_instance, String url)? onLongPressImage,
   }) {
     if (PigeonOverrides.webView_new != null) {
-      return PigeonOverrides.webView_new!(onScrollChanged: onScrollChanged);
+      return PigeonOverrides.webView_new!(
+        onScrollChanged: onScrollChanged,
+        onLongPressImage: onLongPressImage,
+      );
     }
     return WebView.pigeon_new(
       pigeon_binaryMessenger: pigeon_binaryMessenger,
       pigeon_instanceManager: pigeon_instanceManager,
       onScrollChanged: onScrollChanged,
+      onLongPressImage: onLongPressImage,
     );
   }
 
@@ -1578,6 +1742,7 @@ class WebView extends View {
     super.pigeon_binaryMessenger,
     super.pigeon_instanceManager,
     this.onScrollChanged,
+    this.onLongPressImage,
   }) : super.pigeon_detached() {
     final int pigeonVar_instanceIdentifier = pigeon_instanceManager.addDartCreatedInstance(this);
     final _PigeonInternalProxyApiBaseCodec pigeonChannelCodec = _pigeonVar_codecWebView;
@@ -1608,6 +1773,7 @@ class WebView extends View {
     super.pigeon_binaryMessenger,
     super.pigeon_instanceManager,
     this.onScrollChanged,
+    this.onLongPressImage,
   }) : super.pigeon_detached();
 
   late final _PigeonInternalProxyApiBaseCodec _pigeonVar_codecWebView =
@@ -1636,6 +1802,27 @@ class WebView extends View {
   final void Function(WebView pigeon_instance, int left, int top, int oldLeft, int oldTop)?
   onScrollChanged;
 
+  /// Callback invoked when an image is long-pressed in the WebView.
+  ///
+  /// For the associated Native object to be automatically garbage collected,
+  /// it is required that the implementation of this `Function` doesn't have a
+  /// strong reference to the encapsulating class instance. When this `Function`
+  /// references a non-local variable, it is strongly recommended to access it
+  /// with a `WeakReference`:
+  ///
+  /// ```dart
+  /// final WeakReference weakMyVariable = WeakReference(myVariable);
+  /// final WebView instance = WebView(
+  ///  onLongPressImage: (WebView pigeon_instance, ...) {
+  ///    print(weakMyVariable?.target);
+  ///  },
+  /// );
+  /// ```
+  ///
+  /// Alternatively, [PigeonInstanceManager.removeWeakReference] can be used to
+  /// release the associated Native object manually.
+  final void Function(WebView pigeon_instance, String url)? onLongPressImage;
+
   /// The WebSettings object used to control the settings for this WebView.
   late final WebSettings settings = pigeonVar_settings();
 
@@ -1646,6 +1833,7 @@ class WebView extends View {
     WebView Function()? pigeon_newInstance,
     void Function(WebView pigeon_instance, int left, int top, int oldLeft, int oldTop)?
     onScrollChanged,
+    void Function(WebView pigeon_instance, String url)? onLongPressImage,
   }) {
     final _PigeonInternalProxyApiBaseCodec pigeonChannelCodec = _PigeonInternalProxyApiBaseCodec(
       pigeon_instanceManager ?? PigeonInstanceManager.instance,
@@ -1719,6 +1907,36 @@ class WebView extends View {
         });
       }
     }
+
+    {
+      final pigeonVar_channel = BasicMessageChannel<Object?>(
+        'dev.flutter.pigeon.webview_flutter_android.WebView.onLongPressImage',
+        pigeonChannelCodec,
+        binaryMessenger: binaryMessenger,
+      );
+      if (pigeon_clearHandlers) {
+        pigeonVar_channel.setMessageHandler(null);
+      } else {
+        pigeonVar_channel.setMessageHandler((Object? message) async {
+          final List<Object?> args = message! as List<Object?>;
+          final WebView arg_pigeon_instance = args[0]! as WebView;
+          final String arg_url = args[1]! as String;
+          try {
+            (onLongPressImage ?? arg_pigeon_instance.onLongPressImage)?.call(
+              arg_pigeon_instance,
+              arg_url,
+            );
+            return wrapResponse(empty: true);
+          } on PlatformException catch (e) {
+            return wrapResponse(error: e);
+          } catch (e) {
+            return wrapResponse(
+              error: PlatformException(code: 'error', message: e.toString()),
+            );
+          }
+        });
+      }
+    }
   }
 
   WebSettings pigeonVar_settings() {
@@ -1747,6 +1965,28 @@ class WebView extends View {
       _extractReplyValueOrThrow(pigeonVar_replyList, pigeonVar_channelName, isNullValid: true);
     }();
     return pigeonVar_instance;
+  }
+
+  /// Gets the hit test result for the current touch or long-click event.
+  Future<WebViewHitTestResult?> getHitTestResult() async {
+    final _PigeonInternalProxyApiBaseCodec pigeonChannelCodec = _pigeonVar_codecWebView;
+    final BinaryMessenger? pigeonVar_binaryMessenger = pigeon_binaryMessenger;
+    const pigeonVar_channelName =
+        'dev.flutter.pigeon.webview_flutter_android.WebView.getHitTestResult';
+    final pigeonVar_channel = BasicMessageChannel<Object?>(
+      pigeonVar_channelName,
+      pigeonChannelCodec,
+      binaryMessenger: pigeonVar_binaryMessenger,
+    );
+    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(<Object?>[this]);
+    final pigeonVar_replyList = await pigeonVar_sendFuture as List<Object?>?;
+
+    final Object? pigeonVar_replyValue = _extractReplyValueOrThrow(
+      pigeonVar_replyList,
+      pigeonVar_channelName,
+      isNullValid: true,
+    );
+    return pigeonVar_replyValue as WebViewHitTestResult?;
   }
 
   /// Loads the given data into this WebView using a 'data' scheme URL.
@@ -2167,6 +2407,7 @@ class WebView extends View {
       pigeon_binaryMessenger: pigeon_binaryMessenger,
       pigeon_instanceManager: pigeon_instanceManager,
       onScrollChanged: onScrollChanged,
+      onLongPressImage: onLongPressImage,
     );
   }
 }

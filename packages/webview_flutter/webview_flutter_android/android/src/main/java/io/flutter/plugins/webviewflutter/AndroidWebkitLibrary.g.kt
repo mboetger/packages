@@ -155,10 +155,6 @@ class AndroidWebkitLibraryPigeonInstanceManager(
    */
   fun <T> remove(identifier: Long): T? {
     logWarningIfFinalizationListenerHasStopped()
-    val instance: Any? = getInstance(identifier)
-    if (instance is WebViewProxyApi.WebViewPlatformView) {
-      instance.destroy()
-    }
     return strongInstances.remove(identifier) as T?
   }
 
@@ -456,6 +452,12 @@ abstract class AndroidWebkitLibraryPigeonProxyApiRegistrar(val binaryMessenger: 
   abstract fun getPigeonApiCookieManager(): PigeonApiCookieManager
 
   /**
+   * An implementation of [PigeonApiWebViewHitTestResult] used to add a new Dart instance of
+   * `WebViewHitTestResult` to the Dart `InstanceManager`.
+   */
+  abstract fun getPigeonApiWebViewHitTestResult(): PigeonApiWebViewHitTestResult
+
+  /**
    * An implementation of [PigeonApiWebView] used to add a new Dart instance of `WebView` to the
    * Dart `InstanceManager`.
    */
@@ -613,6 +615,8 @@ abstract class AndroidWebkitLibraryPigeonProxyApiRegistrar(val binaryMessenger: 
     AndroidWebkitLibraryPigeonInstanceManagerApi.setUpMessageHandlers(
         binaryMessenger, instanceManager)
     PigeonApiCookieManager.setUpMessageHandlers(binaryMessenger, getPigeonApiCookieManager())
+    PigeonApiWebViewHitTestResult.setUpMessageHandlers(
+        binaryMessenger, getPigeonApiWebViewHitTestResult())
     PigeonApiWebView.setUpMessageHandlers(binaryMessenger, getPigeonApiWebView())
     PigeonApiWebSettings.setUpMessageHandlers(binaryMessenger, getPigeonApiWebSettings())
     PigeonApiJavaScriptChannel.setUpMessageHandlers(
@@ -648,6 +652,7 @@ abstract class AndroidWebkitLibraryPigeonProxyApiRegistrar(val binaryMessenger: 
   fun tearDown() {
     AndroidWebkitLibraryPigeonInstanceManagerApi.setUpMessageHandlers(binaryMessenger, null)
     PigeonApiCookieManager.setUpMessageHandlers(binaryMessenger, null)
+    PigeonApiWebViewHitTestResult.setUpMessageHandlers(binaryMessenger, null)
     PigeonApiWebView.setUpMessageHandlers(binaryMessenger, null)
     PigeonApiWebSettings.setUpMessageHandlers(binaryMessenger, null)
     PigeonApiJavaScriptChannel.setUpMessageHandlers(binaryMessenger, null)
@@ -709,6 +714,7 @@ private class AndroidWebkitLibraryPigeonProxyApiBaseCodec(
         value is SslErrorType ||
         value is MixedContentMode ||
         value is WindowInsetsType ||
+        value is WebViewHitTestResultType ||
         value == null) {
       super.writeValue(stream, value)
       return
@@ -760,6 +766,12 @@ private class AndroidWebkitLibraryPigeonProxyApiBaseCodec(
       registrar.getPigeonApiCookieManager().pigeon_newInstance(value) {
         if (it.isFailure) {
           logNewInstanceFailure("CookieManager", value, it.exceptionOrNull())
+        }
+      }
+    } else if (value is android.webkit.WebView.HitTestResult) {
+      registrar.getPigeonApiWebViewHitTestResult().pigeon_newInstance(value) {
+        if (it.isFailure) {
+          logNewInstanceFailure("WebViewHitTestResult", value, it.exceptionOrNull())
         }
       }
     } else if (value is android.webkit.WebView) {
@@ -1140,6 +1152,40 @@ enum class WindowInsetsType(val raw: Int) {
   }
 }
 
+/**
+ * Represents the type of target hit in a [WebViewHitTestResult].
+ *
+ * See https://developer.android.com/reference/android/webkit/WebView.HitTestResult.
+ */
+enum class WebViewHitTestResultType(val raw: Int) {
+  /** Unknown target type. */
+  UNKNOWN(0),
+  /** Target is an anchor (link). */
+  ANCHOR(1),
+  /** Target is a phone number. */
+  PHONE(2),
+  /** Target is a geographic address. */
+  GEO(3),
+  /** Target is an email address. */
+  EMAIL(4),
+  /** Target is an image. */
+  IMAGE(5),
+  /** Target is an image with an anchor. */
+  IMAGE_ANCHOR(6),
+  /** Target is a source anchor. */
+  SRC_ANCHOR(7),
+  /** Target is a source image anchor. */
+  SRC_IMAGE_ANCHOR(8),
+  /** Target is an editable text field. */
+  EDIT_TEXT(9);
+
+  companion object {
+    fun ofRaw(raw: Int): WebViewHitTestResultType? {
+      return values().firstOrNull { it.raw == raw }
+    }
+  }
+}
+
 private open class AndroidWebkitLibraryPigeonCodec : StandardMessageCodec() {
   override fun readValueOfType(type: Byte, buffer: ByteBuffer): Any? {
     return when (type) {
@@ -1160,6 +1206,9 @@ private open class AndroidWebkitLibraryPigeonCodec : StandardMessageCodec() {
       }
       134.toByte() -> {
         return (readValue(buffer) as Long?)?.let { WindowInsetsType.ofRaw(it.toInt()) }
+      }
+      135.toByte() -> {
+        return (readValue(buffer) as Long?)?.let { WebViewHitTestResultType.ofRaw(it.toInt()) }
       }
       else -> super.readValueOfType(type, buffer)
     }
@@ -1189,6 +1238,10 @@ private open class AndroidWebkitLibraryPigeonCodec : StandardMessageCodec() {
       }
       is WindowInsetsType -> {
         stream.write(134)
+        writeValue(stream, value.raw.toLong())
+      }
+      is WebViewHitTestResultType -> {
+        stream.write(135)
         writeValue(stream, value.raw.toLong())
       }
       else -> super.writeValue(stream, value)
@@ -1746,6 +1799,114 @@ abstract class PigeonApiCookieManager(
   }
 }
 /**
+ * Represents the result of a hit test on a [WebView].
+ *
+ * See https://developer.android.com/reference/android/webkit/WebView.HitTestResult.
+ */
+@Suppress("UNCHECKED_CAST")
+abstract class PigeonApiWebViewHitTestResult(
+    open val pigeonRegistrar: AndroidWebkitLibraryPigeonProxyApiRegistrar
+) {
+  /** Gets the type of the hit test result. */
+  abstract fun getType(
+      pigeon_instance: android.webkit.WebView.HitTestResult
+  ): WebViewHitTestResultType
+
+  /** Gets additional information about the hit test result. */
+  abstract fun getExtra(pigeon_instance: android.webkit.WebView.HitTestResult): String?
+
+  companion object {
+    @Suppress("LocalVariableName")
+    fun setUpMessageHandlers(
+        binaryMessenger: BinaryMessenger,
+        api: PigeonApiWebViewHitTestResult?
+    ) {
+      val codec = api?.pigeonRegistrar?.codec ?: AndroidWebkitLibraryPigeonCodec()
+      run {
+        val channel =
+            BasicMessageChannel<Any?>(
+                binaryMessenger,
+                "dev.flutter.pigeon.webview_flutter_android.WebViewHitTestResult.getType",
+                codec)
+        if (api != null) {
+          channel.setMessageHandler { message, reply ->
+            val args = message as List<Any?>
+            val pigeon_instanceArg = args[0] as android.webkit.WebView.HitTestResult
+            val wrapped: List<Any?> =
+                try {
+                  listOf(api.getType(pigeon_instanceArg))
+                } catch (exception: Throwable) {
+                  AndroidWebkitLibraryPigeonUtils.wrapError(exception)
+                }
+            reply.reply(wrapped)
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel =
+            BasicMessageChannel<Any?>(
+                binaryMessenger,
+                "dev.flutter.pigeon.webview_flutter_android.WebViewHitTestResult.getExtra",
+                codec)
+        if (api != null) {
+          channel.setMessageHandler { message, reply ->
+            val args = message as List<Any?>
+            val pigeon_instanceArg = args[0] as android.webkit.WebView.HitTestResult
+            val wrapped: List<Any?> =
+                try {
+                  listOf(api.getExtra(pigeon_instanceArg))
+                } catch (exception: Throwable) {
+                  AndroidWebkitLibraryPigeonUtils.wrapError(exception)
+                }
+            reply.reply(wrapped)
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+    }
+  }
+
+  @Suppress("LocalVariableName", "FunctionName")
+  /** Creates a Dart instance of WebViewHitTestResult and attaches it to [pigeon_instanceArg]. */
+  fun pigeon_newInstance(
+      pigeon_instanceArg: android.webkit.WebView.HitTestResult,
+      callback: (Result<Unit>) -> Unit
+  ) {
+    if (pigeonRegistrar.ignoreCallsToDart) {
+      callback(
+          Result.failure(
+              AndroidWebKitError("ignore-calls-error", "Calls to Dart are being ignored.", "")))
+    } else if (pigeonRegistrar.instanceManager.containsInstance(pigeon_instanceArg)) {
+      callback(Result.success(Unit))
+    } else {
+      val pigeon_identifierArg =
+          pigeonRegistrar.instanceManager.addHostCreatedInstance(pigeon_instanceArg)
+      val binaryMessenger = pigeonRegistrar.binaryMessenger
+      val codec = pigeonRegistrar.codec
+      val channelName =
+          "dev.flutter.pigeon.webview_flutter_android.WebViewHitTestResult.pigeon_newInstance"
+      val channel = BasicMessageChannel<Any?>(binaryMessenger, channelName, codec)
+      channel.send(listOf(pigeon_identifierArg)) {
+        if (it is List<*>) {
+          if (it.size > 1) {
+            callback(
+                Result.failure(
+                    AndroidWebKitError(it[0] as String, it[1] as String, it[2] as String?)))
+          } else {
+            callback(Result.success(Unit))
+          }
+        } else {
+          callback(
+              Result.failure(AndroidWebkitLibraryPigeonUtils.createConnectionError(channelName)))
+        }
+      }
+    }
+  }
+}
+/**
  * A View that displays web pages.
  *
  * See https://developer.android.com/reference/android/webkit/WebView.
@@ -1758,6 +1919,11 @@ abstract class PigeonApiWebView(
 
   /** The WebSettings object used to control the settings for this WebView. */
   abstract fun settings(pigeon_instance: android.webkit.WebView): android.webkit.WebSettings
+
+  /** Gets the hit test result for the current touch or long-click event. */
+  abstract fun getHitTestResult(
+      pigeon_instance: android.webkit.WebView
+  ): android.webkit.WebView.HitTestResult?
 
   /** Loads the given data into this WebView using a 'data' scheme URL. */
   abstract fun loadData(
@@ -1904,6 +2070,28 @@ abstract class PigeonApiWebView(
                   api.pigeonRegistrar.instanceManager.addDartCreatedInstance(
                       api.settings(pigeon_instanceArg), pigeon_identifierArg)
                   listOf(null)
+                } catch (exception: Throwable) {
+                  AndroidWebkitLibraryPigeonUtils.wrapError(exception)
+                }
+            reply.reply(wrapped)
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel =
+            BasicMessageChannel<Any?>(
+                binaryMessenger,
+                "dev.flutter.pigeon.webview_flutter_android.WebView.getHitTestResult",
+                codec)
+        if (api != null) {
+          channel.setMessageHandler { message, reply ->
+            val args = message as List<Any?>
+            val pigeon_instanceArg = args[0] as android.webkit.WebView
+            val wrapped: List<Any?> =
+                try {
+                  listOf(api.getHitTestResult(pigeon_instanceArg))
                 } catch (exception: Throwable) {
                   AndroidWebkitLibraryPigeonUtils.wrapError(exception)
                 }
@@ -2487,6 +2675,45 @@ abstract class PigeonApiWebView(
     val channelName = "dev.flutter.pigeon.webview_flutter_android.WebView.onScrollChanged"
     val channel = BasicMessageChannel<Any?>(binaryMessenger, channelName, codec)
     channel.send(listOf(pigeon_instanceArg, leftArg, topArg, oldLeftArg, oldTopArg)) {
+      if (it is List<*>) {
+        if (it.size > 1) {
+          callback(
+              Result.failure(
+                  AndroidWebKitError(it[0] as String, it[1] as String, it[2] as String?)))
+        } else {
+          callback(Result.success(Unit))
+        }
+      } else {
+        callback(Result.failure(AndroidWebkitLibraryPigeonUtils.createConnectionError(channelName)))
+      }
+    }
+  }
+
+  /** Callback invoked when an image is long-pressed in the WebView. */
+  fun onLongPressImage(
+      pigeon_instanceArg: android.webkit.WebView,
+      urlArg: String,
+      callback: (Result<Unit>) -> Unit
+  ) {
+    if (pigeonRegistrar.ignoreCallsToDart) {
+      callback(
+          Result.failure(
+              AndroidWebKitError("ignore-calls-error", "Calls to Dart are being ignored.", "")))
+      return
+    } else if (!pigeonRegistrar.instanceManager.containsInstance(pigeon_instanceArg)) {
+      callback(
+          Result.failure(
+              AndroidWebKitError(
+                  "missing-instance-error",
+                  "Callback to `WebView.onLongPressImage` failed because native instance was not in the instance manager.",
+                  "")))
+      return
+    }
+    val binaryMessenger = pigeonRegistrar.binaryMessenger
+    val codec = pigeonRegistrar.codec
+    val channelName = "dev.flutter.pigeon.webview_flutter_android.WebView.onLongPressImage"
+    val channel = BasicMessageChannel<Any?>(binaryMessenger, channelName, codec)
+    channel.send(listOf(pigeon_instanceArg, urlArg)) {
       if (it is List<*>) {
         if (it.size > 1) {
           callback(

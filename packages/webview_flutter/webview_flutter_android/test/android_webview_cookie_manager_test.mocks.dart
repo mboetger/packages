@@ -145,6 +145,23 @@ class MockAndroidWebViewController extends _i1.Mock implements _i6.AndroidWebVie
           as _i5.Future<void>);
 
   @override
+  _i5.Future<_i2.WebViewHitTestResult?> getHitTestResult() =>
+      (super.noSuchMethod(
+            Invocation.method(#getHitTestResult, []),
+            returnValue: _i5.Future<_i2.WebViewHitTestResult?>.value(),
+          )
+          as _i5.Future<_i2.WebViewHitTestResult?>);
+
+  @override
+  _i5.Future<void> enableLongPressSaveImage() =>
+      (super.noSuchMethod(
+            Invocation.method(#enableLongPressSaveImage, []),
+            returnValue: _i5.Future<void>.value(),
+            returnValueForMissingStub: _i5.Future<void>.value(),
+          )
+          as _i5.Future<void>);
+
+  @override
   _i5.Future<void> loadFile(String? absoluteFilePath) =>
       (super.noSuchMethod(
             Invocation.method(#loadFile, [absoluteFilePath]),
@@ -589,6 +606,15 @@ class MockAndroidWebViewController extends _i1.Mock implements _i6.AndroidWebVie
   _i5.Future<void> setPaymentRequestEnabled(bool? enabled) =>
       (super.noSuchMethod(
             Invocation.method(#setPaymentRequestEnabled, [enabled]),
+            returnValue: _i5.Future<void>.value(),
+            returnValueForMissingStub: _i5.Future<void>.value(),
+          )
+          as _i5.Future<void>);
+
+  @override
+  _i5.Future<void> setInsetsForWebContentToIgnore(List<_i6.AndroidWebViewInsets>? insets) =>
+      (super.noSuchMethod(
+            Invocation.method(#setInsetsForWebContentToIgnore, [insets]),
             returnValue: _i5.Future<void>.value(),
             returnValueForMissingStub: _i5.Future<void>.value(),
           )

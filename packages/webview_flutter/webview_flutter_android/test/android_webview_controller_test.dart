@@ -32,6 +32,7 @@ import 'android_webview_controller_test.mocks.dart';
   MockSpec<android_webview.WebView>(),
   MockSpec<android_webview.WebViewClient>(),
   MockSpec<android_webview.WebStorage>(),
+  MockSpec<android_webview.WebViewHitTestResult>(),
 ])
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -90,6 +91,11 @@ void main() {
       onJsPrompt,
     })?
     createWebChromeClient,
+    android_webview.WebView Function({
+      dynamic Function(android_webview.WebView, int, int, int, int)? onScrollChanged,
+      void Function(android_webview.WebView, String)? onLongPressImage,
+    })?
+    createWebView,
     android_webview.WebView? mockWebView,
     android_webview.WebViewClient? mockWebViewClient,
     android_webview.WebStorage? mockWebStorage,
@@ -152,9 +158,11 @@ void main() {
           onJsPrompt,
         }) => MockWebChromeClient();
     android_webview.PigeonOverrides.webView_new =
+        createWebView ??
         ({
           dynamic Function(android_webview.WebView, int left, int top, int oldLeft, int oldTop)?
           onScrollChanged,
+          void Function(android_webview.WebView, String)? onLongPressImage,
         }) => nonNullMockWebView;
     android_webview.PigeonOverrides.webViewClient_new =
         ({
@@ -1881,6 +1889,110 @@ void main() {
     }
   });
 
+  test('getHitTestResult', () async {
+    final mockWebView = MockWebView();
+    final mockHitTestResult = MockWebViewHitTestResult();
+    final AndroidWebViewController controller = createControllerWithMocks(mockWebView: mockWebView);
+
+    when(
+      mockWebView.getHitTestResult(),
+    ).thenAnswer((_) => Future<android_webview.WebViewHitTestResult?>.value(mockHitTestResult));
+
+    final android_webview.WebViewHitTestResult? result = await controller.getHitTestResult();
+
+    expect(result, mockHitTestResult);
+    verify(mockWebView.getHitTestResult()).called(1);
+  });
+
+  test('enableLongPressSaveImage and onLongPressImage triggers navigation request', () async {
+    android_webview.PigeonOverrides.webViewClient_new = TestWebViewClient.new;
+    android_webview.PigeonOverrides.webChromeClient_new = TestWebChromeClient.new;
+    android_webview.PigeonOverrides.downloadListener_new = TestDownloadListener.new;
+
+    final mockWebView = MockWebView();
+    late final void Function(android_webview.WebView, String) capturedOnLongPressImage;
+    final AndroidWebViewController controller = createControllerWithMocks(
+      mockWebView: mockWebView,
+      createWebView:
+          ({
+            dynamic Function(android_webview.WebView, int left, int top, int oldLeft, int oldTop)?
+            onScrollChanged,
+            void Function(android_webview.WebView, String)? onLongPressImage,
+          }) {
+            if (onLongPressImage != null) {
+              capturedOnLongPressImage = onLongPressImage;
+            }
+            return mockWebView;
+          },
+    );
+
+    final androidNavigationDelegate = AndroidNavigationDelegate(
+      AndroidNavigationDelegateCreationParams.fromPlatformNavigationDelegateCreationParams(
+        const PlatformNavigationDelegateCreationParams(),
+      ),
+    );
+
+    late final String capturedUrl;
+    late final bool capturedIsMainFrame;
+    await androidNavigationDelegate.setOnNavigationRequest((NavigationRequest request) {
+      capturedUrl = request.url;
+      capturedIsMainFrame = request.isMainFrame;
+      return NavigationDecision.navigate;
+    });
+
+    await controller.setPlatformNavigationDelegate(androidNavigationDelegate);
+    await controller.enableLongPressSaveImage();
+
+    capturedOnLongPressImage(mockWebView, 'https://example.com/image.png');
+
+    expect(capturedUrl, 'https://example.com/image.png');
+    expect(capturedIsMainFrame, isTrue);
+  });
+
+  test(
+    'onLongPressImage does not trigger navigation request when enableLongPressSaveImage is not called',
+    () async {
+      android_webview.PigeonOverrides.webViewClient_new = TestWebViewClient.new;
+      android_webview.PigeonOverrides.webChromeClient_new = TestWebChromeClient.new;
+      android_webview.PigeonOverrides.downloadListener_new = TestDownloadListener.new;
+
+      final mockWebView = MockWebView();
+      late final void Function(android_webview.WebView, String) capturedOnLongPressImage;
+      final AndroidWebViewController controller = createControllerWithMocks(
+        mockWebView: mockWebView,
+        createWebView:
+            ({
+              dynamic Function(android_webview.WebView, int left, int top, int oldLeft, int oldTop)?
+              onScrollChanged,
+              void Function(android_webview.WebView, String)? onLongPressImage,
+            }) {
+              if (onLongPressImage != null) {
+                capturedOnLongPressImage = onLongPressImage;
+              }
+              return mockWebView;
+            },
+      );
+
+      final androidNavigationDelegate = AndroidNavigationDelegate(
+        AndroidNavigationDelegateCreationParams.fromPlatformNavigationDelegateCreationParams(
+          const PlatformNavigationDelegateCreationParams(),
+        ),
+      );
+
+      var navigationRequestCalled = false;
+      await androidNavigationDelegate.setOnNavigationRequest((NavigationRequest request) {
+        navigationRequestCalled = true;
+        return NavigationDecision.navigate;
+      });
+
+      await controller.setPlatformNavigationDelegate(androidNavigationDelegate);
+
+      capturedOnLongPressImage(mockWebView, 'https://example.com/image.png');
+
+      expect(navigationRequestCalled, isFalse);
+    },
+  );
+
   group('AndroidWebViewWidget', () {
     testWidgets('Builds Android view using supplied parameters', (WidgetTester tester) async {
       final android_webview.WebView mockWebView = MockWebView();
@@ -2212,6 +2324,22 @@ void main() {
           onFocus: anyNamed('onFocus'),
         ),
       );
+    });
+
+    testWidgets('enableLongPressSaveImage calls controller.enableLongPressSaveImage', (
+      WidgetTester tester,
+    ) async {
+      final mockController = MockAndroidWebViewController();
+      final widget = AndroidWebViewWidget(
+        AndroidWebViewWidgetCreationParams(
+          key: const Key('test_web_view'),
+          controller: mockController,
+        ),
+      );
+
+      await widget.enableLongPressSaveImage();
+
+      verify(mockController.enableLongPressSaveImage()).called(1);
     });
   });
 
