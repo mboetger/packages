@@ -50,8 +50,13 @@ class SurfaceAndroidWebView extends AndroidWebView {
             return AndroidViewSurface(
               controller: controller as AndroidViewController,
               gestureRecognizers:
-                  gestureRecognizers ?? const <Factory<OneSequenceGestureRecognizer>>{},
-              hitTestBehavior: PlatformViewHitTestBehavior.opaque,
+                  gestureRecognizers != null && gestureRecognizers.isNotEmpty
+                      ? gestureRecognizers
+                      : const <Factory<OneSequenceGestureRecognizer>>{
+                          Factory<OneSequenceGestureRecognizer>(
+                            EagerGestureRecognizer.new,
+                          ),
+                        },              hitTestBehavior: PlatformViewHitTestBehavior.opaque,
             );
           },
           onCreatePlatformView: (PlatformViewCreationParams params) {

@@ -1060,9 +1060,10 @@ class AndroidWebViewWidgetCreationParams extends PlatformWebViewWidgetCreationPa
   AndroidWebViewWidgetCreationParams.fromPlatformWebViewWidgetCreationParams(
     PlatformWebViewWidgetCreationParams params, {
     bool displayWithHybridComposition = false,
+    @visibleForTesting android_webview.PigeonInstanceManager? instanceManager,
     @visibleForTesting
-    PlatformViewsServiceProxy platformViewsServiceProxy = const PlatformViewsServiceProxy(),
-  }) : this(
+    PlatformViewsServiceProxy platformViewsServiceProxy =
+        const PlatformViewsServiceProxy(),  }) : this(
          key: params.key,
          controller: params.controller,
          layoutDirection: params.layoutDirection,
@@ -1136,7 +1137,13 @@ class AndroidWebViewWidget extends PlatformWebViewWidget {
       surfaceFactory: (BuildContext context, PlatformViewController controller) {
         return AndroidViewSurface(
           controller: controller as AndroidViewController,
-          gestureRecognizers: _androidParams.gestureRecognizers,
+          gestureRecognizers: _androidParams.gestureRecognizers.isEmpty
+              ? const <Factory<OneSequenceGestureRecognizer>>{
+                  Factory<OneSequenceGestureRecognizer>(
+                    EagerGestureRecognizer.new,
+                  ),
+                }
+              : _androidParams.gestureRecognizers,
           hitTestBehavior: PlatformViewHitTestBehavior.opaque,
         );
       },
@@ -1225,7 +1232,11 @@ class AndroidCustomViewWidget extends StatelessWidget {
         return AndroidViewSurface(
           controller: controller as AndroidViewController,
           hitTestBehavior: PlatformViewHitTestBehavior.opaque,
-          gestureRecognizers: const <Factory<OneSequenceGestureRecognizer>>{},
+          gestureRecognizers: const <Factory<OneSequenceGestureRecognizer>>{
+            Factory<OneSequenceGestureRecognizer>(
+              EagerGestureRecognizer.new,
+            ),
+          },
         );
       },
       onCreatePlatformView: (PlatformViewCreationParams params) {

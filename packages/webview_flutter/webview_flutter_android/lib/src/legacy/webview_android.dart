@@ -51,10 +51,17 @@ class AndroidWebView implements WebViewPlatform {
                 onWebViewPlatformCreated(controller);
               }
             },
-            gestureRecognizers: gestureRecognizers,
-            layoutDirection: Directionality.maybeOf(context) ?? TextDirection.rtl,
-            creationParams: PigeonInstanceManager.instance.getIdentifier(controller.webView),
-            creationParamsCodec: const StandardMessageCodec(),
+            gestureRecognizers:
+                gestureRecognizers != null && gestureRecognizers.isNotEmpty
+                    ? gestureRecognizers
+                    : const <Factory<OneSequenceGestureRecognizer>>{
+                        Factory<OneSequenceGestureRecognizer>(
+                          EagerGestureRecognizer.new,
+                        ),
+                      },
+            layoutDirection:
+                Directionality.maybeOf(context) ?? TextDirection.rtl,
+            creationParams: instanceManager.getIdentifier(controller.webView),            creationParamsCodec: const StandardMessageCodec(),
           ),
         );
       },
