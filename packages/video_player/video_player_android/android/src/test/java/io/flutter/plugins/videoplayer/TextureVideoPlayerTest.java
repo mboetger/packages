@@ -11,6 +11,7 @@ import static org.mockito.Mockito.*;
 import android.view.Surface;
 import androidx.media3.common.AudioAttributes;
 import androidx.media3.common.C;
+import androidx.test.core.app.ApplicationProvider;
 import androidx.media3.common.PlaybackParameters;
 import androidx.media3.common.Player;
 import androidx.media3.common.VideoSize;
@@ -64,7 +65,12 @@ public final class TextureVideoPlayerTest {
 
   private TextureVideoPlayer createVideoPlayer(VideoPlayerOptions options) {
     return new TextureVideoPlayer(
-        mockEvents, mockProducer, fakeVideoAsset.getMediaItem(), options, () -> mockExoPlayer);
+        ApplicationProvider.getApplicationContext(),
+        mockEvents,
+        mockProducer,
+        fakeVideoAsset.getMediaItem(),
+        options,
+        () -> mockExoPlayer);
   }
 
   @Test

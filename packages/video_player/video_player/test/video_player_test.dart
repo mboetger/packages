@@ -1752,6 +1752,19 @@ void main() {
 
         await controller.initialize();
         expect(controller.videoPlayerOptions!.mixWithOthers, true);
+        expect(fakeVideoPlayerPlatform.calls, contains('setMixWithOthers'));
+      });
+
+      test('setAllowBackgroundPlayback', () async {
+        final controller = VideoPlayerController.networkUrl(
+          _localhostUri,
+          videoPlayerOptions: VideoPlayerOptions(allowBackgroundPlayback: true),
+        );
+        addTearDown(controller.dispose);
+
+        await controller.initialize();
+        expect(controller.videoPlayerOptions!.allowBackgroundPlayback, true);
+        expect(fakeVideoPlayerPlatform.calls, contains('setAllowBackgroundPlayback'));
       });
 
       test('true allowBackgroundPlayback continues playback', () async {
@@ -2002,6 +2015,11 @@ class FakeVideoPlayerPlatform extends VideoPlayerPlatform {
   @override
   Future<void> setMixWithOthers(bool mixWithOthers) async {
     calls.add('setMixWithOthers');
+  }
+
+  @override
+  Future<void> setAllowBackgroundPlayback(bool allowBackgroundPlayback) async {
+    calls.add('setAllowBackgroundPlayback');
   }
 
   @override

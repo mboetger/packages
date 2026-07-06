@@ -7,6 +7,7 @@ package io.flutter.plugins.videoplayer;
 import static androidx.media3.common.Player.REPEAT_MODE_ALL;
 import static androidx.media3.common.Player.REPEAT_MODE_OFF;
 
+import android.content.Context;
 import android.os.Handler;
 import android.os.Looper;
 import androidx.annotation.NonNull;
@@ -22,6 +23,7 @@ import androidx.media3.common.Tracks;
 import androidx.media3.common.util.UnstableApi;
 import androidx.media3.exoplayer.ExoPlayer;
 import androidx.media3.exoplayer.trackselection.DefaultTrackSelector;
+import androidx.media3.session.MediaSession;
 import io.flutter.view.TextureRegistry.SurfaceProducer;
 import java.util.ArrayList;
 import java.util.List;
@@ -36,6 +38,7 @@ public abstract class VideoPlayer implements VideoPlayerInstanceApi {
   @Nullable protected final SurfaceProducer surfaceProducer;
   @Nullable private DisposeHandler disposeHandler;
   @NonNull protected ExoPlayer exoPlayer;
+  @Nullable protected MediaSession mediaSession;
   // TODO: Migrate to stable API, see https://github.com/flutter/flutter/issues/147039.
   @UnstableApi @Nullable protected DefaultTrackSelector trackSelector;
 
@@ -66,6 +69,7 @@ public abstract class VideoPlayer implements VideoPlayerInstanceApi {
   // https://github.com/flutter/packages/pull/10193
   @SuppressWarnings("this-escape")
   public VideoPlayer(
+      @NonNull Context context,
       @NonNull VideoPlayerCallbacks events,
       @NonNull MediaItem mediaItem,
       @NonNull VideoPlayerOptions options,
@@ -84,6 +88,9 @@ public abstract class VideoPlayer implements VideoPlayerInstanceApi {
     exoPlayer.prepare();
     exoPlayer.addListener(createExoPlayerEventListener(exoPlayer, surfaceProducer));
     setAudioAttributes(exoPlayer, options.mixWithOthers);
+    if (options.allowBackgroundPlayback) {
+      mediaSession = new MediaSession.Builder(context, exoPlayer).build();
+    }
   }
 
   public void setDisposeHandler(@Nullable DisposeHandler handler) {
@@ -452,6 +459,10 @@ public abstract class VideoPlayer implements VideoPlayerInstanceApi {
     mainHandler.removeCallbacksAndMessages(null);
     if (disposeHandler != null) {
       disposeHandler.onDispose();
+    }
+    if (mediaSession != null) {
+      mediaSession.release();
+      mediaSession = null;
     }
     exoPlayer.release();
   }

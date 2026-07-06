@@ -111,4 +111,22 @@ public class VideoPlayerPluginTest {
       assertTrue(videoPlayers.get(ids.getPlayerId()) instanceof TextureVideoPlayer);
     }
   }
+
+  @Test
+  public void setMixWithOthers_setsSharedOptions() throws Exception {
+    plugin.setMixWithOthers(true);
+    Field field = VideoPlayerPlugin.class.getDeclaredField("sharedOptions");
+    field.setAccessible(true);
+    VideoPlayerOptions options = (VideoPlayerOptions) field.get(plugin);
+    assertTrue(options.mixWithOthers);
+  }
+
+  @Test
+  public void setAllowBackgroundPlayback_setsSharedOptions() throws Exception {
+    plugin.setAllowBackgroundPlayback(true);
+    Field field = VideoPlayerPlugin.class.getDeclaredField("sharedOptions");
+    field.setAccessible(true);
+    VideoPlayerOptions options = (VideoPlayerOptions) field.get(plugin);
+    assertTrue(options.allowBackgroundPlayback);
+  }
 }

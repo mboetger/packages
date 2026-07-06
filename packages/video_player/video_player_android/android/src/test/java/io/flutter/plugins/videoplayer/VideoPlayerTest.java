@@ -13,14 +13,20 @@ import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.*;
 
+import android.content.Context;
+import android.os.Looper;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.test.core.app.ApplicationProvider;
 import androidx.media3.common.AudioAttributes;
 import androidx.media3.common.C;
+import androidx.media3.common.DeviceInfo;
 import androidx.media3.common.Format;
 import androidx.media3.common.MediaItem;
+import androidx.media3.common.MediaMetadata;
 import androidx.media3.common.PlaybackParameters;
 import androidx.media3.common.Player;
+import androidx.media3.common.Timeline;
 import androidx.media3.common.TrackGroup;
 import androidx.media3.common.TrackSelectionOverride;
 import androidx.media3.common.Tracks;
@@ -70,12 +76,13 @@ public final class VideoPlayerTest {
   /** A test subclass of {@link VideoPlayer} that exposes the abstract class for testing. */
   private final class TestVideoPlayer extends VideoPlayer {
     private TestVideoPlayer(
+        @NonNull Context context,
         @NonNull VideoPlayerCallbacks events,
         @NonNull MediaItem mediaItem,
         @NonNull VideoPlayerOptions options,
         @Nullable SurfaceProducer surfaceProducer,
         @NonNull ExoPlayerProvider exoPlayerProvider) {
-      super(events, mediaItem, options, surfaceProducer, exoPlayerProvider);
+      super(context, events, mediaItem, options, surfaceProducer, exoPlayerProvider);
     }
 
     @NonNull
@@ -90,6 +97,25 @@ public final class VideoPlayerTest {
   @Before
   public void setUp() {
     fakeVideoAsset = new FakeVideoAsset(FAKE_ASSET_URL);
+    when(mockExoPlayer.getApplicationLooper()).thenReturn(Looper.getMainLooper());
+    when(mockExoPlayer.getAvailableCommands()).thenReturn(Player.Commands.EMPTY);
+    when(mockExoPlayer.canAdvertiseSession()).thenReturn(true);
+    when(mockExoPlayer.getDeviceInfo()).thenReturn(DeviceInfo.UNKNOWN);
+    when(mockExoPlayer.getAudioAttributes()).thenReturn(AudioAttributes.DEFAULT);
+    when(mockExoPlayer.getPlaybackState()).thenReturn(Player.STATE_IDLE);
+    when(mockExoPlayer.getPlaybackParameters()).thenReturn(PlaybackParameters.DEFAULT);
+    when(mockExoPlayer.getCurrentTimeline()).thenReturn(Timeline.EMPTY);
+    when(mockExoPlayer.getCurrentTracks()).thenReturn(Tracks.EMPTY);
+    when(mockExoPlayer.getMediaMetadata()).thenReturn(MediaMetadata.EMPTY);
+    when(mockExoPlayer.getPlaylistMetadata()).thenReturn(MediaMetadata.EMPTY);
+    when(mockExoPlayer.getDuration()).thenReturn(C.TIME_UNSET);
+    when(mockExoPlayer.getCurrentPosition()).thenReturn(0L);
+    when(mockExoPlayer.getBufferedPosition()).thenReturn(0L);
+    when(mockExoPlayer.getTotalBufferedDuration()).thenReturn(0L);
+    when(mockExoPlayer.getVolume()).thenReturn(1.0f);
+    when(mockExoPlayer.getSeekBackIncrement()).thenReturn(0L);
+    when(mockExoPlayer.getSeekForwardIncrement()).thenReturn(0L);
+    when(mockExoPlayer.getMaxSeekToPreviousPosition()).thenReturn(0L);
   }
 
   private VideoPlayer createVideoPlayer() {
@@ -98,7 +124,12 @@ public final class VideoPlayerTest {
 
   private VideoPlayer createVideoPlayer(VideoPlayerOptions options) {
     return new TestVideoPlayer(
-        mockEvents, fakeVideoAsset.getMediaItem(), options, null, () -> mockExoPlayer);
+        ApplicationProvider.getApplicationContext(),
+        mockEvents,
+        fakeVideoAsset.getMediaItem(),
+        options,
+        null,
+        () -> mockExoPlayer);
   }
 
   @Test
@@ -1118,6 +1149,28 @@ public final class VideoPlayerTest {
     verify(mockBuilder).clearOverridesOfType(C.TRACK_TYPE_VIDEO);
     verify(mockBuilder).build();
     verify(mockTrackSelector).setParameters(mockParameters);
+
+    videoPlayer.dispose();
+  }
+
+  @Test
+  public void allowBackgroundPlaybackCreatesMediaSession() {
+    VideoPlayerOptions options = new VideoPlayerOptions();
+    options.allowBackgroundPlayback = true;
+    VideoPlayer videoPlayer = createVideoPlayer(options);
+
+    assertNotNull(videoPlayer.mediaSession);
+
+    videoPlayer.dispose();
+  }
+
+  @Test
+  public void falseAllowBackgroundPlaybackDoesNotCreateMediaSession() {
+    VideoPlayerOptions options = new VideoPlayerOptions();
+    options.allowBackgroundPlayback = false;
+    VideoPlayer videoPlayer = createVideoPlayer(options);
+
+    assertNull(videoPlayer.mediaSession);
 
     videoPlayer.dispose();
   }
