@@ -605,15 +605,16 @@ class VideoPlayerController extends ValueNotifier<VideoPlayerValue> {
           _applyLooping();
           _applyVolume();
           _applyPlayPause();
-        case platform_interface.VideoEventType.completed:
-          // In this case we need to stop _timer, set isPlaying=false, and
-          // position=value.duration. Instead of setting the values directly,
-          // we use pause() and seekTo() to ensure the platform stops playing
-          // and seeks to the last frame of the video.
-          pause().then((void pauseResult) => seekTo(value.duration));
-          value = value.copyWith(isCompleted: true);
-        case platform_interface.VideoEventType.bufferingUpdate:
-          value = value.copyWith(buffered: event.buffered);
+        case VideoEventType.completed:
+          if (!value.isLooping) {
+            // In this case we need to stop _timer, set isPlaying=false, and
+            // position=value.duration. Instead of setting the values directly,
+            // we use pause() and seekTo() to ensure the platform stops playing
+            // and seeks to the last frame of the video.
+            pause().then((void pauseResult) => seekTo(value.duration));
+            value = value.copyWith(isCompleted: true);
+          }
+        case VideoEventType.bufferingUpdate:          value = value.copyWith(buffered: event.buffered);
         case platform_interface.VideoEventType.bufferingStart:
           value = value.copyWith(isBuffering: true);
         case platform_interface.VideoEventType.bufferingEnd:
@@ -915,7 +916,7 @@ class VideoPlayerController extends ValueNotifier<VideoPlayerValue> {
     value = value.copyWith(
       position: position,
       caption: _getCaptionAt(position),
-      isCompleted: position == value.duration,
+      isCompleted: position == value.duration && !value.isLooping,
     );
   }
 

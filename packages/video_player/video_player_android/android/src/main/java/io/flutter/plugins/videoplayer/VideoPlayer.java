@@ -53,6 +53,7 @@ public abstract class VideoPlayer implements VideoPlayerInstanceApi {
     ExoPlayer get();
   }
 
+<<<<<<< HEAD
   /** A handler to run when dispose is called. */
   public interface DisposeHandler {
     void onDispose();
@@ -64,6 +65,8 @@ public abstract class VideoPlayer implements VideoPlayerInstanceApi {
   // https://bugs.openjdk.org/browse/JDK-8015831.
   // Keeping behavior as-is and addressing the warning could cause a regression:
   // https://github.com/flutter/packages/pull/10193
+=======
+>>>>>>> 70fef01c9b ([video_player] Fix glitching and isCompleted state when setLooping(true) (#71152))
   @SuppressWarnings("this-escape")
   public VideoPlayer(
       @NonNull VideoPlayerCallbacks events,

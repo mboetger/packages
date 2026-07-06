@@ -1816,7 +1816,105 @@ void main() {
           currentIsCompleted = controller.value.isCompleted;
           if (controller.value.isCompleted) {
             isCompletedTest();
-          }
+  test('isCompleted updates on video end', () async {
+    final VideoPlayerController controller = VideoPlayerController.networkUrl(
+      _localhostUri,
+      videoPlayerOptions: VideoPlayerOptions(),
+    );
+    addTearDown(controller.dispose);
+
+    await controller.initialize();
+
+    final StreamController<VideoEvent> fakeVideoEventStream =
+        fakeVideoPlayerPlatform.streams[controller.textureId]!;
+
+    bool currentIsCompleted = controller.value.isCompleted;
+
+    final void Function() isCompletedTest = expectAsync0(() {});
+
+    controller.addListener(() async {
+      if (currentIsCompleted != controller.value.isCompleted) {
+        currentIsCompleted = controller.value.isCompleted;
+        if (controller.value.isCompleted) {
+          isCompletedTest();
+        }
+      }
+    });
+
+    fakeVideoEventStream.add(VideoEvent(eventType: VideoEventType.completed));
+  });
+
+  test(
+      'isCompleted does not update on video end when looping (issue flutter/flutter#71152)',
+      () async {
+    final VideoPlayerController controller = VideoPlayerController.networkUrl(
+      _localhostUri,
+      videoPlayerOptions: VideoPlayerOptions(),
+    );
+    addTearDown(controller.dispose);
+
+    await controller.initialize();
+    await controller.play();
+    await controller.setLooping(true);
+
+    final StreamController<VideoEvent> fakeVideoEventStream =
+        fakeVideoPlayerPlatform.streams[controller.textureId]!;
+
+    fakeVideoEventStream.add(VideoEvent(eventType: VideoEventType.completed));
+    await Future<void>.delayed(Duration.zero);
+
+    expect(controller.value.isCompleted, isFalse);
+    expect(controller.value.isPlaying, isTrue);
+  });
+
+  test(
+      'isCompleted does not update on seek to duration when looping (issue flutter/flutter#71152)',
+      () async {
+    final VideoPlayerController controller = VideoPlayerController.networkUrl(
+      _localhostUri,
+      videoPlayerOptions: VideoPlayerOptions(),
+    );
+    addTearDown(controller.dispose);
+
+    await controller.initialize();
+    await controller.setLooping(true);
+
+    controller.value =
+        controller.value.copyWith(duration: const Duration(seconds: 10));
+
+    await controller.seekTo(const Duration(seconds: 10));
+
+    expect(controller.value.isCompleted, isFalse);
+  });
+
+  test('isCompleted updates on video play after completed', () async {
+    final VideoPlayerController controller = VideoPlayerController.networkUrl(
+      _localhostUri,
+      videoPlayerOptions: VideoPlayerOptions(),
+    );
+    addTearDown(controller.dispose);
+
+    await controller.initialize();
+
+    final StreamController<VideoEvent> fakeVideoEventStream =
+        fakeVideoPlayerPlatform.streams[controller.textureId]!;
+
+    bool currentIsCompleted = controller.value.isCompleted;
+
+    final void Function() isCompletedTest = expectAsync0(() {}, count: 2);
+    final void Function() isNoLongerCompletedTest = expectAsync0(() {});
+    bool hasLooped = false;
+
+    controller.addListener(() async {
+      if (currentIsCompleted != controller.value.isCompleted) {
+        currentIsCompleted = controller.value.isCompleted;
+        if (controller.value.isCompleted) {
+          isCompletedTest();
+          if (!hasLooped) {
+            fakeVideoEventStream.add(VideoEvent(
+                eventType: VideoEventType.isPlayingStateUpdate,
+                isPlaying: true));
+            hasLooped = !hasLooped;          }
         }
       });
 
