@@ -1,3 +1,7 @@
+## 0.8.13+20
+
+* Adds consumer ProGuard rules to keep `ImagePickerFileProvider`.
+
 ## 0.8.13+19
 
 * Bumps the androidx group across 10 directories with 1 update.
