@@ -85,6 +85,7 @@ class GoogleMapController
   private boolean indoorEnabled = true;
   private boolean trafficEnabled = false;
   private boolean buildingsEnabled = true;
+  private boolean compassEnabled = true;
   private boolean disposed = false;
   @VisibleForTesting final float density;
   private @Nullable Function1<? super @NotNull Result<@NotNull Unit>, @NotNull Unit>
@@ -124,6 +125,9 @@ class GoogleMapController
     this.id = id;
     this.context = context;
     this.options = options;
+    if (options != null && options.getCompassEnabled() != null) {
+      this.compassEnabled = options.getCompassEnabled();
+    }
     this.mapView = new MapView(context, options);
     this.density = context.getResources().getDisplayMetrics().density;
     this.binaryMessenger = binaryMessenger;
@@ -171,6 +175,9 @@ class GoogleMapController
     this.binaryMessenger = binaryMessenger;
     this.flutterApi = flutterApi;
     this.options = options;
+    if (options != null && options.getCompassEnabled() != null) {
+      this.compassEnabled = options.getCompassEnabled();
+    }
     this.mapView = new MapView(context, options);
     this.density = context.getResources().getDisplayMetrics().density;
     this.lifecycleProvider = lifecycleProvider;
@@ -547,7 +554,10 @@ class GoogleMapController
 
   @Override
   public void setCompassEnabled(boolean compassEnabled) {
-    googleMap.getUiSettings().setCompassEnabled(compassEnabled);
+    this.compassEnabled = compassEnabled;
+    if (googleMap != null) {
+      googleMap.getUiSettings().setCompassEnabled(compassEnabled);
+    }
   }
 
   @Override
@@ -784,6 +794,7 @@ class GoogleMapController
       // noinspection ResourceType
       googleMap.setMyLocationEnabled(myLocationEnabled);
       googleMap.getUiSettings().setMyLocationButtonEnabled(myLocationButtonEnabled);
+      googleMap.getUiSettings().setCompassEnabled(compassEnabled);
     } else {
       // TODO(amirh): Make the options update fail.
       // https://github.com/flutter/flutter/issues/24327

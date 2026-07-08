@@ -10,6 +10,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyFloat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.spy;
@@ -23,6 +24,8 @@ import androidx.test.core.app.ApplicationProvider;
 import com.google.android.gms.maps.CameraUpdate;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
+import com.google.android.gms.maps.GoogleMapOptions;
+import com.google.android.gms.maps.UiSettings;
 import com.google.android.gms.maps.model.CameraPosition;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MapCapabilities;
@@ -36,11 +39,13 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mockito.InOrder;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.mockito.MockitoAnnotations;
 import org.robolectric.Robolectric;
 import org.robolectric.RobolectricTestRunner;
+import org.robolectric.Shadows;
 
 @RunWith(RobolectricTestRunner.class)
 public class GoogleMapControllerTest {
@@ -358,5 +363,46 @@ public class GoogleMapControllerTest {
     final List<PlatformWeightedLatLng> heatmapData =
         List.of(new PlatformWeightedLatLng(new PlatformLatLng(1.1, 2.2), 3.3));
     return new PlatformHeatmap(id, heatmapData, null, /* opacity */ 1.0, /* radius */ 20, null);
+  }
+
+  @Test
+  public void compassEnabledRefreshedAfterMyLocationSettings() {
+    UiSettings mockUiSettings = mock(UiSettings.class);
+    when(mockGoogleMap.getUiSettings()).thenReturn(mockUiSettings);
+
+    Shadows.shadowOf((android.app.Application) context)
+        .grantPermissions(android.Manifest.permission.ACCESS_FINE_LOCATION);
+
+    GoogleMapOptions options = new GoogleMapOptions().compassEnabled(true);
+
+    GoogleMapController googleMapController =
+        new GoogleMapController(
+            0,
+            context,
+            mockMessenger,
+            flutterApi,
+            activity::getLifecycle,
+            options,
+            mockClusterManagersController,
+            mockMarkersController,
+            mockPolygonsController,
+            mockPolylinesController,
+            mockCirclesController,
+            mockHeatmapsController,
+            mockTileOverlaysController,
+            mockGroundOverlaysController);
+    googleMapController.init();
+
+    googleMapController.setMyLocationEnabled(true);
+    googleMapController.setMyLocationButtonEnabled(false);
+
+    googleMapController.onMapReady(mockGoogleMap);
+
+    InOrder inOrder = inOrder(mockGoogleMap, mockUiSettings);
+    inOrder.verify(mockGoogleMap).setMyLocationEnabled(true);
+    inOrder.verify(mockUiSettings).setMyLocationButtonEnabled(false);
+    inOrder.verify(mockUiSettings).setCompassEnabled(true);
+
+    googleMapController.dispose();
   }
 }
