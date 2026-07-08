@@ -1,3 +1,7 @@
+## 2.0.36
+
+* Fixes an unsafe cast in `FlutterLifecycleAdapter.getActivityLifecycle` that causes a `NullPointerException` or `ClassCastException` under older engine versions or when mocked incorrectly. It now throws a descriptive `IllegalStateException`.
+
 ## 2.0.35
 
 * Bumps the androidx group across 10 directories with 1 update.

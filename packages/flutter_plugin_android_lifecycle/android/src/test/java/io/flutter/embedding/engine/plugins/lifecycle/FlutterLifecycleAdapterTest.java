@@ -5,6 +5,8 @@
 package io.flutter.embedding.engine.plugins.lifecycle;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThrows;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.when;
 
 import androidx.lifecycle.Lifecycle;
@@ -42,5 +44,35 @@ public class FlutterLifecycleAdapterTest {
         FlutterLifecycleAdapter.getActivityLifecycle(mockActivityPluginBinding);
 
     assertEquals(lifecycle, parsedLifecycle);
+  }
+
+  @Test
+  public void getActivityLifecycle_throwsIllegalStateExceptionWhenLifecycleIsNull() {
+    when(mockActivityPluginBinding.getLifecycle()).thenReturn(null);
+
+    IllegalStateException exception =
+        assertThrows(
+            IllegalStateException.class,
+            () -> {
+              FlutterLifecycleAdapter.getActivityLifecycle(mockActivityPluginBinding);
+            });
+
+    assertTrue(
+        exception.getMessage().contains("Cannot extract lifecycle from ActivityPluginBinding"));
+  }
+
+  @Test
+  public void getActivityLifecycle_throwsIllegalStateExceptionWhenLifecycleIsDifferentType() {
+    when(mockActivityPluginBinding.getLifecycle()).thenReturn(new Object());
+
+    IllegalStateException exception =
+        assertThrows(
+            IllegalStateException.class,
+            () -> {
+              FlutterLifecycleAdapter.getActivityLifecycle(mockActivityPluginBinding);
+            });
+
+    assertTrue(
+        exception.getMessage().contains("Cannot extract lifecycle from ActivityPluginBinding"));
   }
 }
