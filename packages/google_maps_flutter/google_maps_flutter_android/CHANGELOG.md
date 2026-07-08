@@ -1,3 +1,7 @@
+## 2.19.13
+
+* Fixes an issue where updating a Marker's title or snippet does not refresh its InfoWindow if it is currently showing.
+
 ## 2.19.12
 
 * Bumps the androidx group across 10 directories with 1 update.

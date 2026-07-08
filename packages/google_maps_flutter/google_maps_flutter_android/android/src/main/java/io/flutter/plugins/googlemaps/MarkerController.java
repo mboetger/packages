@@ -106,6 +106,10 @@ class MarkerController implements MarkerOptionsSink {
     }
     marker.setTitle(title);
     marker.setSnippet(snippet);
+    // Refresh the info window if it is already showing to display the updated text.
+    if (marker.isInfoWindowShown()) {
+      marker.showInfoWindow();
+    }
   }
 
   @Override
