@@ -33,17 +33,6 @@ public class MainActivity extends FlutterActivity {
     @Override
     public void onAttachedToActivity(ActivityPluginBinding binding) {
       Lifecycle lifecycle = FlutterLifecycleAdapter.getActivityLifecycle(binding);
-
-      if (lifecycle == null) {
-        Log.d(TAG, "Couldn't obtained Lifecycle!");
-        return;
-        // TODO(amirh): make this throw once the lifecycle API is available on stable.
-        // https://github.com/flutter/flutter/issues/42875
-        // throw new RuntimeException(
-        //     "The FlutterLifecycleAdapter did not correctly provide a Lifecycle instance. Source
-        // reference: "
-        //         + flutterPluginBinding.getLifecycle());
-      }
       Log.d(TAG, "Successfully obtained Lifecycle: " + lifecycle);
     }
 

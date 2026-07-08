@@ -13,14 +13,25 @@ public class FlutterLifecycleAdapter {
   /**
    * Returns the lifecycle object for the activity a plugin is bound to.
    *
-   * <p>Returns null if the Flutter engine version does not include the lifecycle extraction code.
-   * (this probably means the Flutter engine version is too old).
+   * @throws IllegalArgumentException if the Flutter engine version is too old and does not support
+   *     the hidden lifecycle API, or if the lifecycle reference is null or invalid.
    */
   @NonNull
   public static Lifecycle getActivityLifecycle(
       @NonNull ActivityPluginBinding activityPluginBinding) {
-    HiddenLifecycleReference reference =
-        (HiddenLifecycleReference) activityPluginBinding.getLifecycle();
+    Object lifecycleReference = activityPluginBinding.getLifecycle();
+    if (lifecycleReference == null) {
+      throw new IllegalArgumentException(
+          "ActivityPluginBinding.getLifecycle() returned null. This plugin requires an engine"
+              + " version that supports HiddenLifecycleReference.");
+    }
+    if (!(lifecycleReference instanceof HiddenLifecycleReference)) {
+      throw new IllegalArgumentException(
+          "ActivityPluginBinding.getLifecycle() returned a non-HiddenLifecycleReference object: "
+              + lifecycleReference.getClass().getName()
+              + ". This plugin requires an engine version that supports HiddenLifecycleReference.");
+    }
+    HiddenLifecycleReference reference = (HiddenLifecycleReference) lifecycleReference;
     return reference.getLifecycle();
   }
 }

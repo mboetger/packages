@@ -1,3 +1,7 @@
+## 2.0.36
+
+* Throws `IllegalArgumentException` in `FlutterLifecycleAdapter.getActivityLifecycle` if the engine does not support the hidden lifecycle API.
+
 ## 2.0.35
 
 * Bumps the androidx group across 10 directories with 1 update.
