@@ -135,7 +135,10 @@ class AuthenticationHelper extends BiometricPrompt.AuthenticationCallback
       case BiometricPrompt.ERROR_CANCELED:
         // If we are doing sticky auth and the activity has been paused,
         // ignore this error. We will start listening again when resumed.
-        if (activityPaused && isAuthSticky) {
+        if (isAuthSticky
+            && (activityPaused
+                || (lifecycle != null
+                    && !lifecycle.getCurrentState().isAtLeast(Lifecycle.State.RESUMED)))) {
           return;
         }
         code = AuthResultCode.SYSTEM_CANCELED;

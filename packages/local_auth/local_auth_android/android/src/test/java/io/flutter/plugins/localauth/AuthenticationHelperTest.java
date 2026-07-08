@@ -4,7 +4,9 @@
 
 package io.flutter.plugins.localauth;
 
+import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -12,6 +14,7 @@ import android.app.Application;
 import android.content.Context;
 import androidx.biometric.BiometricPrompt;
 import androidx.fragment.app.FragmentActivity;
+import androidx.lifecycle.Lifecycle;
 import io.flutter.plugins.localauth.AuthenticationHelper.AuthCompletionHandler;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -248,6 +251,30 @@ public class AuthenticationHelperTest {
     helper.onAuthenticationError(BiometricPrompt.ERROR_UNABLE_TO_PROCESS, "");
 
     verify(handler).complete(new AuthResult(AuthResultCode.UNKNOWN_ERROR, ""));
+  }
+
+  @Test
+  public void onAuthenticationError_withSticky_notResumed_ignoresError() {
+    final AuthCompletionHandler handler = mock(AuthCompletionHandler.class);
+    final Lifecycle mockLifecycle = mock(Lifecycle.class);
+    when(mockLifecycle.getCurrentState()).thenReturn(Lifecycle.State.STARTED);
+
+    final AuthOptions stickyOptions =
+        new AuthOptions(
+            /* biometricOnly */ false, /* sensitiveTransaction */ false, /* sticky */ true);
+
+    final AuthenticationHelper helper =
+        new AuthenticationHelper(
+            mockLifecycle,
+            buildMockActivityWithContext(mock(FragmentActivity.class)),
+            stickyOptions,
+            dummyStrings,
+            handler,
+            true);
+
+    helper.onAuthenticationError(BiometricPrompt.ERROR_CANCELED, "");
+
+    verify(handler, never()).complete(any());
   }
 
   private FragmentActivity buildMockActivityWithContext(FragmentActivity mockActivity) {
