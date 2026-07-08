@@ -1,3 +1,7 @@
+## 2.0.10
+
+* Fixes IllegalStateException during sticky auth on Android when activity is rapidly backgrounded and foregrounded.
+
 ## 2.0.9
 
 * Migrates to Built-in Kotlin to support AGP 9.

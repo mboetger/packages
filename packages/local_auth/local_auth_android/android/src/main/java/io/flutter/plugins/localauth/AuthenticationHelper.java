@@ -183,11 +183,21 @@ class AuthenticationHelper extends BiometricPrompt.AuthenticationCallback
   @Override
   public void onActivityResumed(Activity ignored) {
     if (isAuthSticky) {
-      activityPaused = false;
-      final BiometricPrompt prompt = new BiometricPrompt(activity, uiThreadExecutor, this);
-      // When activity is resuming, we cannot show the prompt right away. We need to post it to the
-      // UI queue.
-      uiThreadExecutor.handler.post(() -> prompt.authenticate(promptInfo));
+      if (activityPaused) {
+        activityPaused = false;
+        biometricPrompt = new BiometricPrompt(activity, uiThreadExecutor, this);
+        // When activity is resuming, we cannot show the prompt right away. We need to post it to
+        // the UI queue.
+        uiThreadExecutor.handler.post(
+            () -> {
+              if (!activityPaused
+                  && !activity.isFinishing()
+                  && !activity.isDestroyed()
+                  && biometricPrompt != null) {
+                biometricPrompt.authenticate(promptInfo);
+              }
+            });
+      }
     }
   }
 
