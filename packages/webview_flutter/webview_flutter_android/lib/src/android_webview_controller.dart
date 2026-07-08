@@ -398,6 +398,11 @@ class AndroidWebViewController extends PlatformWebViewController {
   /// when targeting API 30 and above.
   Future<void> setAllowFileAccess(bool allow) => _webView.settings.setAllowFileAccess(allow);
 
+  /// Sets whether the WebView should behave in network-available mode.
+  ///
+  /// See https://developer.android.com/reference/android/webkit/WebView#setNetworkAvailable(boolean).
+  Future<void> setNetworkAvailable(bool networkUp) => _webView.setNetworkAvailable(networkUp);
+
   /// Whether to enable the platform's webview content debugging tools.
   ///
   /// Defaults to false.

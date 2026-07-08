@@ -369,4 +369,15 @@ public class WebViewTest {
     verify(mockApi)
         .onScrollChanged(eq(instance), eq(left), eq(top), eq(oldLeft), eq(oldTop), any());
   }
+
+  @Test
+  public void setNetworkAvailable() {
+    final PigeonApiWebView api = new TestProxyApiRegistrar().getPigeonApiWebView();
+
+    final WebView instance = mock(WebView.class);
+    final boolean networkUp = true;
+    api.setNetworkAvailable(instance, networkUp);
+
+    verify(instance).setNetworkAvailable(networkUp);
+  }
 }

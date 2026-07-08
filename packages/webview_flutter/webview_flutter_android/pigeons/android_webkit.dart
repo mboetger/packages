@@ -377,6 +377,11 @@ abstract class WebView extends View {
 
   /// Destroys the internal state of this WebView.
   void destroy();
+
+  /// Sets whether the WebView should behave in network-available mode.
+  ///
+  /// See https://developer.android.com/reference/android/webkit/WebView#setNetworkAvailable(boolean).
+  void setNetworkAvailable(bool networkUp);
 }
 
 /// Manages settings state for a `WebView`.

@@ -1706,6 +1706,19 @@ void main() {
       verify(mockWebView.settings).called(1);
       verify(mockSettings.setAllowFileAccess(true)).called(1);
     });
+
+    test('setNetworkAvailable', () async {
+      final mockWebView = MockWebView();
+      final AndroidWebViewController controller = createControllerWithMocks(
+        mockWebView: mockWebView,
+      );
+
+      clearInteractions(mockWebView);
+
+      await controller.setNetworkAvailable(true);
+
+      verify(mockWebView.setNetworkAvailable(true)).called(1);
+    });
   });
 
   test('setMediaPlaybackRequiresUserGesture', () async {

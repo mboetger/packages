@@ -282,4 +282,9 @@ public class WebViewProxyApi extends PigeonApiWebView {
   public void destroy(@NonNull WebView pigeon_instance) {
     pigeon_instance.destroy();
   }
+
+  @Override
+  public void setNetworkAvailable(@NonNull WebView pigeon_instance, boolean networkUp) {
+    pigeon_instance.setNetworkAvailable(networkUp);
+  }
 }

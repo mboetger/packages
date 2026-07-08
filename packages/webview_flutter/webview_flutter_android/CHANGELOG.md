@@ -1,3 +1,7 @@
+## 4.14.0
+
+* Adds AndroidWebViewController.setNetworkAvailable to support setting network availability.
+
 ## 4.13.0
 
 * Adds new method for accessing a native `WebView` from a `FlutterPluginBinding`.
