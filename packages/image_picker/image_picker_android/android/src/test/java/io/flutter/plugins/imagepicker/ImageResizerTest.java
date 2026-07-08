@@ -44,6 +44,7 @@ public class ImageResizerTest {
   File svgImageFile;
   File tallJPG;
   File wideJPG;
+  File gifFile;
   File externalDirectory;
   Bitmap originalImageBitmap;
 
@@ -58,6 +59,7 @@ public class ImageResizerTest {
     tallJPG = new File(getClass().getClassLoader().getResource("jpgImageTall.jpg").getFile());
     // wideJPG has height 7px and width 12px.
     wideJPG = new File(getClass().getClassLoader().getResource("jpgImageWide.jpg").getFile());
+    gifFile = new File(getClass().getClassLoader().getResource("animatedGif.gif").getFile());
     originalImageBitmap = BitmapFactory.decodeFile(imageFile.getPath());
     TemporaryFolder temporaryFolder = new TemporaryFolder();
     temporaryFolder.create();
@@ -225,5 +227,17 @@ public class ImageResizerTest {
     float height = originalSize.getHeight();
     assertThat(width, equalTo(12.0F));
     assertThat(height, equalTo(7.0F));
+  }
+
+  @Test
+  public void onResizeImageIfNeeded_whenGif_shouldPreserveAnimationAndFormat() {
+    assertTrue("Source file must be a GIF", resizer.isGif(gifFile.getPath()));
+
+    String outputFile =
+        resizer.resizeImageIfNeeded(
+            gifFile.getPath(), /* maxWidth */ 100.0, /* maxHeight */ 100.0, /* imageQuality */ 100);
+
+    assertThat(outputFile, equalTo(gifFile.getPath()));
+    assertTrue("Resized output file must still be a GIF", resizer.isGif(outputFile));
   }
 }

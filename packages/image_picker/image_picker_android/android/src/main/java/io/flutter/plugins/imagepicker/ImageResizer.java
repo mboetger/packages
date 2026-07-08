@@ -35,6 +35,9 @@ class ImageResizer {
    */
   String resizeImageIfNeeded(
       String imagePath, @Nullable Double maxWidth, @Nullable Double maxHeight, int imageQuality) {
+    if (isGif(imagePath)) {
+      return imagePath;
+    }
     SizeFCompat originalSize = readFileDimensions(imagePath);
     if (originalSize.getWidth() == -1 || originalSize.getHeight() == -1) {
       return imagePath;
@@ -70,6 +73,23 @@ class ImageResizer {
       return file.getPath();
     } catch (IOException e) {
       throw new RuntimeException(e);
+    }
+  }
+
+  @VisibleForTesting
+  boolean isGif(String path) {
+    if (path == null) {
+      return false;
+    }
+    try (java.io.FileInputStream fis = new java.io.FileInputStream(path)) {
+      byte[] signature = new byte[3];
+      int read = fis.read(signature);
+      return read == 3
+          && signature[0] == 'G'
+          && signature[1] == 'I'
+          && signature[2] == 'F';
+    } catch (IOException e) {
+      return false;
     }
   }
 
