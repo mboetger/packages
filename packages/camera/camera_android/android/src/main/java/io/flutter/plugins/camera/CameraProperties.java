@@ -5,6 +5,7 @@
 package io.flutter.plugins.camera;
 
 import android.graphics.Rect;
+import android.hardware.camera2.params.StreamConfigurationMap;
 import android.os.Build.VERSION_CODES;
 import android.util.Range;
 import android.util.Size;
@@ -14,6 +15,14 @@ import androidx.annotation.RequiresApi;
 
 /** An interface allowing access to the different characteristics of the device's camera. */
 public interface CameraProperties {
+
+  /**
+   * Returns the stream configuration map for this camera device.
+   *
+   * @return StreamConfigurationMap The stream configuration map.
+   */
+  @Nullable
+  StreamConfigurationMap getStreamConfigurationMap();
 
   /**
    * Returns the name (or identifier) of the camera device.

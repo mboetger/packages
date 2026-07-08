@@ -6,7 +6,6 @@ package io.flutter.plugins.camera;
 
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.any;
-import static org.mockito.Mockito.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -28,39 +27,58 @@ import org.junit.Test;
 public class CameraUtilsTest {
 
   @Test
-  public void getAvailableCameras_retrievesValidCameras()
-      throws CameraAccessException, NumberFormatException {
+  public void getAvailableCameras_retrievesValidCameras() throws CameraAccessException {
     final Activity mockActivity = mock(Activity.class);
     final CameraManager mockCameraManager = mock(CameraManager.class);
-    final CameraCharacteristics mockCameraCharacteristics = mock(CameraCharacteristics.class);
+    final CameraCharacteristics mockCharacteristics1 = mock(CameraCharacteristics.class);
+    final CameraCharacteristics mockCharacteristics2 = mock(CameraCharacteristics.class);
+    final CameraCharacteristics mockCharacteristics3 = mock(CameraCharacteristics.class);
+    final CameraCharacteristics mockCharacteristics4 = mock(CameraCharacteristics.class);
     final String[] mockCameraIds = {"1394902", "-192930", "0283835", "foobar"};
-    final int mockSensorOrientation0 = 90;
-    final int mockSensorOrientation2 = 270;
-    final int mockLensFacing0 = CameraMetadata.LENS_FACING_FRONT;
-    final int mockLensFacing2 = CameraMetadata.LENS_FACING_EXTERNAL;
 
     when(mockActivity.getSystemService(Context.CAMERA_SERVICE)).thenReturn(mockCameraManager);
     when(mockCameraManager.getCameraIdList()).thenReturn(mockCameraIds);
-    when(mockCameraManager.getCameraCharacteristics(anyString()))
-        .thenReturn(mockCameraCharacteristics);
-    when(mockCameraCharacteristics.get(any()))
-        .thenReturn(mockSensorOrientation0)
-        .thenReturn(mockLensFacing0)
-        .thenReturn(mockSensorOrientation2)
-        .thenReturn(mockLensFacing2);
+    when(mockCameraManager.getCameraCharacteristics("1394902")).thenReturn(mockCharacteristics1);
+    when(mockCameraManager.getCameraCharacteristics("-192930")).thenReturn(mockCharacteristics2);
+    when(mockCameraManager.getCameraCharacteristics("0283835")).thenReturn(mockCharacteristics3);
+    when(mockCameraManager.getCameraCharacteristics("foobar")).thenReturn(mockCharacteristics4);
+
+    when(mockCharacteristics1.get(any()))
+        .thenReturn(90)
+        .thenReturn(CameraMetadata.LENS_FACING_FRONT);
+    when(mockCharacteristics2.get(any()))
+        .thenReturn(180)
+        .thenReturn(CameraMetadata.LENS_FACING_BACK);
+    when(mockCharacteristics3.get(any()))
+        .thenReturn(270)
+        .thenReturn(CameraMetadata.LENS_FACING_EXTERNAL);
+    when(mockCharacteristics4.get(any()))
+        .thenReturn(0)
+        .thenReturn(CameraMetadata.LENS_FACING_EXTERNAL);
 
     List<Messages.PlatformCameraDescription> availableCameras =
         CameraUtils.getAvailableCameras(mockActivity);
 
-    assertEquals(availableCameras.size(), 2);
-    assertEquals(availableCameras.get(0).getName(), "1394902");
-    assertEquals(availableCameras.get(0).getSensorOrientation().intValue(), mockSensorOrientation0);
+    assertEquals(4, availableCameras.size());
+    assertEquals("1394902", availableCameras.get(0).getName());
+    assertEquals(90, availableCameras.get(0).getSensorOrientation().intValue());
     assertEquals(
-        availableCameras.get(0).getLensDirection(), Messages.PlatformCameraLensDirection.FRONT);
-    assertEquals(availableCameras.get(1).getName(), "0283835");
-    assertEquals(availableCameras.get(1).getSensorOrientation().intValue(), mockSensorOrientation2);
+        Messages.PlatformCameraLensDirection.FRONT, availableCameras.get(0).getLensDirection());
+
+    assertEquals("-192930", availableCameras.get(1).getName());
+    assertEquals(180, availableCameras.get(1).getSensorOrientation().intValue());
     assertEquals(
-        availableCameras.get(1).getLensDirection(), Messages.PlatformCameraLensDirection.EXTERNAL);
+        Messages.PlatformCameraLensDirection.BACK, availableCameras.get(1).getLensDirection());
+
+    assertEquals("0283835", availableCameras.get(2).getName());
+    assertEquals(270, availableCameras.get(2).getSensorOrientation().intValue());
+    assertEquals(
+        Messages.PlatformCameraLensDirection.EXTERNAL, availableCameras.get(2).getLensDirection());
+
+    assertEquals("foobar", availableCameras.get(3).getName());
+    assertEquals(0, availableCameras.get(3).getSensorOrientation().intValue());
+    assertEquals(
+        Messages.PlatformCameraLensDirection.EXTERNAL, availableCameras.get(3).getLensDirection());
   }
 
   @Test

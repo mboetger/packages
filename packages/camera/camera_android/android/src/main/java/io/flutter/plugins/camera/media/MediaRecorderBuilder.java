@@ -25,9 +25,11 @@ public class MediaRecorderBuilder {
     @Nullable public final Integer fps;
     @Nullable public final Integer videoBitrate;
     @Nullable public final Integer audioBitrate;
+    @Nullable public final Integer videoWidth;
+    @Nullable public final Integer videoHeight;
 
     public RecordingParameters(@NonNull String outputFilePath) {
-      this(outputFilePath, null, null, null);
+      this(outputFilePath, null, null, null, null, null);
     }
 
     public RecordingParameters(
@@ -35,10 +37,22 @@ public class MediaRecorderBuilder {
         @Nullable Integer fps,
         @Nullable Integer videoBitrate,
         @Nullable Integer audioBitrate) {
+      this(outputFilePath, fps, videoBitrate, audioBitrate, null, null);
+    }
+
+    public RecordingParameters(
+        @NonNull String outputFilePath,
+        @Nullable Integer fps,
+        @Nullable Integer videoBitrate,
+        @Nullable Integer audioBitrate,
+        @Nullable Integer videoWidth,
+        @Nullable Integer videoHeight) {
       this.outputFilePath = outputFilePath;
       this.fps = fps;
       this.videoBitrate = videoBitrate;
       this.audioBitrate = audioBitrate;
+      this.videoWidth = videoWidth;
+      this.videoHeight = videoHeight;
     }
   }
 
@@ -134,7 +148,10 @@ public class MediaRecorderBuilder {
 
       mediaRecorder.setVideoFrameRate(fps);
 
-      mediaRecorder.setVideoSize(videoProfile.getWidth(), videoProfile.getHeight());
+      int width = (parameters.videoWidth != null) ? parameters.videoWidth : videoProfile.getWidth();
+      int height =
+          (parameters.videoHeight != null) ? parameters.videoHeight : videoProfile.getHeight();
+      mediaRecorder.setVideoSize(width, height);
     } else if (camcorderProfile != null) {
       mediaRecorder.setOutputFormat(camcorderProfile.fileFormat);
       if (enableAudio) {
@@ -154,8 +171,15 @@ public class MediaRecorderBuilder {
           (parameters.fps != null && parameters.fps.intValue() > 0)
               ? parameters.fps
               : camcorderProfile.videoFrameRate);
-      mediaRecorder.setVideoSize(
-          camcorderProfile.videoFrameWidth, camcorderProfile.videoFrameHeight);
+      int width =
+          (parameters.videoWidth != null)
+              ? parameters.videoWidth
+              : camcorderProfile.videoFrameWidth;
+      int height =
+          (parameters.videoHeight != null)
+              ? parameters.videoHeight
+              : camcorderProfile.videoFrameHeight;
+      mediaRecorder.setVideoSize(width, height);
     }
 
     mediaRecorder.setOutputFile(parameters.outputFilePath);

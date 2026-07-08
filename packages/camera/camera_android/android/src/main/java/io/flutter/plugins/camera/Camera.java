@@ -278,6 +278,15 @@ class Camera
         cameraFeatures.getSensorOrientation().getLockedCaptureOrientation();
 
     MediaRecorderBuilder mediaRecorderBuilder;
+    final ResolutionFeature resolutionFeature = cameraFeatures.getResolution();
+    Integer videoWidth =
+        resolutionFeature.getCaptureSize() != null
+            ? resolutionFeature.getCaptureSize().getWidth()
+            : null;
+    Integer videoHeight =
+        resolutionFeature.getCaptureSize() != null
+            ? resolutionFeature.getCaptureSize().getHeight()
+            : null;
 
     // TODO(camsim99): Revert changes that allow legacy code to be used when recordingProfile
     // is null once this has largely been fixed on the Android side.
@@ -290,7 +299,9 @@ class Camera
                   outputFilePath,
                   videoCaptureSettings.fps,
                   videoCaptureSettings.videoBitrate,
-                  videoCaptureSettings.audioBitrate));
+                  videoCaptureSettings.audioBitrate,
+                  videoWidth,
+                  videoHeight));
     } else {
       mediaRecorderBuilder =
           new MediaRecorderBuilder(
@@ -299,7 +310,9 @@ class Camera
                   outputFilePath,
                   videoCaptureSettings.fps,
                   videoCaptureSettings.videoBitrate,
-                  videoCaptureSettings.audioBitrate));
+                  videoCaptureSettings.audioBitrate,
+                  videoWidth,
+                  videoHeight));
     }
 
     mediaRecorder =

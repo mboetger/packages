@@ -6,7 +6,9 @@ package io.flutter.plugins.camera.features.resolution;
 
 import android.annotation.SuppressLint;
 import android.annotation.TargetApi;
+import android.graphics.SurfaceTexture;
 import android.hardware.camera2.CaptureRequest;
+import android.hardware.camera2.params.StreamConfigurationMap;
 import android.media.CamcorderProfile;
 import android.media.EncoderProfiles;
 import android.os.Build;
@@ -51,7 +53,6 @@ public class ResolutionFeature extends CameraFeature<ResolutionPreset> {
       this.cameraId = Integer.parseInt(cameraName, 10);
     } catch (NumberFormatException e) {
       this.cameraId = -1;
-      return;
     }
     configureResolution(resolutionPreset, cameraId);
   }
@@ -113,7 +114,7 @@ public class ResolutionFeature extends CameraFeature<ResolutionPreset> {
 
   @Override
   public final boolean checkIsSupported() {
-    return cameraId >= 0;
+    return true;
   }
 
   @Override
@@ -275,29 +276,129 @@ public class ResolutionFeature extends CameraFeature<ResolutionPreset> {
     }
     boolean captureSizeCalculated = false;
 
-    if (SdkCapabilityChecker.supportsEncoderProfiles()) {
-      recordingProfileLegacy = null;
-      recordingProfile =
-          getBestAvailableCamcorderProfileForResolutionPreset(cameraId, resolutionPreset);
-      List<EncoderProfiles.VideoProfile> videoProfiles = recordingProfile.getVideoProfiles();
+    if (cameraId >= 0) {
+      if (SdkCapabilityChecker.supportsEncoderProfiles()) {
+        recordingProfileLegacy = null;
+        try {
+          recordingProfile =
+              getBestAvailableCamcorderProfileForResolutionPreset(cameraId, resolutionPreset);
+          List<EncoderProfiles.VideoProfile> videoProfiles = recordingProfile.getVideoProfiles();
+          EncoderProfiles.VideoProfile defaultVideoProfile = videoProfiles.get(0);
+          if (defaultVideoProfile != null) {
+            captureSizeCalculated = true;
+            captureSize = new Size(defaultVideoProfile.getWidth(), defaultVideoProfile.getHeight());
+          }
+        } catch (Exception e) {
+          // Fall through to legacy if error occurs
+        }
+      }
 
-      EncoderProfiles.VideoProfile defaultVideoProfile = videoProfiles.get(0);
+      if (!captureSizeCalculated) {
+        recordingProfile = null;
+        try {
+          CamcorderProfile camcorderProfile =
+              getBestAvailableCamcorderProfileForResolutionPresetLegacy(cameraId, resolutionPreset);
+          recordingProfileLegacy = camcorderProfile;
+          captureSize =
+              new Size(
+                  recordingProfileLegacy.videoFrameWidth, recordingProfileLegacy.videoFrameHeight);
+          captureSizeCalculated = true;
+        } catch (Exception e) {
+          // Fall through
+        }
+      }
 
-      if (defaultVideoProfile != null) {
-        captureSizeCalculated = true;
-        captureSize = new Size(defaultVideoProfile.getWidth(), defaultVideoProfile.getHeight());
+      if (captureSizeCalculated) {
+        previewSize = computeBestPreviewSize(cameraId, resolutionPreset);
       }
     }
 
     if (!captureSizeCalculated) {
-      recordingProfile = null;
-      CamcorderProfile camcorderProfile =
-          getBestAvailableCamcorderProfileForResolutionPresetLegacy(cameraId, resolutionPreset);
-      recordingProfileLegacy = camcorderProfile;
-      captureSize =
-          new Size(recordingProfileLegacy.videoFrameWidth, recordingProfileLegacy.videoFrameHeight);
+      // Fallback for non-integer camera IDs (or when CamcorderProfile query fails).
+      // We use StreamConfigurationMap to choose the best supported sizes.
+      StreamConfigurationMap streamConfigurationMap = cameraProperties.getStreamConfigurationMap();
+      if (streamConfigurationMap != null) {
+        Size[] sizes = streamConfigurationMap.getOutputSizes(SurfaceTexture.class);
+        if (sizes != null && sizes.length > 0) {
+          captureSize = getBestSize(sizes, resolutionPreset);
+          previewSize = getBestSize(sizes, resolutionPreset);
+          captureSizeCalculated = true;
+        }
+      }
+
+      // We still need a template profile for MediaRecorder configuration when recording video.
+      // We attempt to get the template profile using camera 0.
+      int templateCameraId = 0;
+      if (SdkCapabilityChecker.supportsEncoderProfiles()) {
+        recordingProfileLegacy = null;
+        try {
+          recordingProfile =
+              getBestAvailableCamcorderProfileForResolutionPreset(
+                  templateCameraId, resolutionPreset);
+        } catch (Exception e) {
+          recordingProfile = null;
+        }
+      }
+      if (recordingProfile == null) {
+        recordingProfileLegacy = null;
+        try {
+          recordingProfileLegacy =
+              getBestAvailableCamcorderProfileForResolutionPresetLegacy(
+                  templateCameraId, resolutionPreset);
+        } catch (Exception e) {
+          recordingProfileLegacy = null;
+        }
+      }
     }
 
-    previewSize = computeBestPreviewSize(cameraId, resolutionPreset);
+    if (captureSize == null) {
+      captureSize = new Size(640, 480);
+    }
+    if (previewSize == null) {
+      previewSize = new Size(640, 480);
+    }
+  }
+
+  private static Size getBestSize(Size[] sizes, ResolutionPreset preset) {
+    if (sizes == null || sizes.length == 0) {
+      return new Size(640, 480);
+    }
+    int targetHeight;
+    switch (preset) {
+      case low:
+        targetHeight = 240;
+        break;
+      case medium:
+        targetHeight = 480;
+        break;
+      case high:
+        targetHeight = 720;
+        break;
+      case veryHigh:
+        targetHeight = 1080;
+        break;
+      case ultraHigh:
+        targetHeight = 2160;
+        break;
+      case max:
+      default:
+        targetHeight = Integer.MAX_VALUE;
+        break;
+    }
+
+    Size bestSize = null;
+    int minDiff = Integer.MAX_VALUE;
+    for (Size size : sizes) {
+      int diff = Math.abs(size.getHeight() - targetHeight);
+      if (diff < minDiff) {
+        minDiff = diff;
+        bestSize = size;
+      } else if (diff == minDiff) {
+        if (bestSize == null || size.getWidth() > bestSize.getWidth()) {
+          bestSize = size;
+        }
+      }
+    }
+    return bestSize;
   }
 }

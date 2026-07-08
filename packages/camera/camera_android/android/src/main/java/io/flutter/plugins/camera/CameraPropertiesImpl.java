@@ -8,6 +8,7 @@ import android.graphics.Rect;
 import android.hardware.camera2.CameraAccessException;
 import android.hardware.camera2.CameraCharacteristics;
 import android.hardware.camera2.CameraManager;
+import android.hardware.camera2.params.StreamConfigurationMap;
 import android.os.Build.VERSION_CODES;
 import android.util.Range;
 import android.util.Rational;
@@ -28,6 +29,12 @@ public class CameraPropertiesImpl implements CameraProperties {
       throws CameraAccessException {
     this.cameraName = cameraName;
     this.cameraCharacteristics = cameraManager.getCameraCharacteristics(cameraName);
+  }
+
+  @Nullable
+  @Override
+  public StreamConfigurationMap getStreamConfigurationMap() {
+    return cameraCharacteristics.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
   }
 
   @NonNull
