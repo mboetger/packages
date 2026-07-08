@@ -1324,6 +1324,8 @@ class AndroidWebResourceError extends WebResourceError {
         return WebResourceErrorType.unsupportedAuthScheme;
       case WebViewClientConstants.errorUnsupportedScheme:
         return WebResourceErrorType.unsupportedScheme;
+      case -17:
+        return WebResourceErrorType.unsupportedContentType;
     }
 
     throw ArgumentError('Could not find a WebResourceErrorType for errorCode: $errorCode');
@@ -1520,8 +1522,19 @@ class AndroidNavigationDelegate extends PlatformNavigationDelegate {
             String mimetype,
             int contentLength,
           ) {
-            if (weakThis.target != null) {
-              weakThis.target?._handleNavigation(url, isForMainFrame: true);
+            final AndroidNavigationDelegate? delegate = weakThis.target;
+            if (delegate != null) {
+              delegate._handleNavigation(url, isForMainFrame: true);
+              if (delegate._onWebResourceError != null) {
+                delegate._onWebResourceError!(
+                  AndroidWebResourceError._(
+                    errorCode: -17,
+                    description: 'Unsupported content type: $mimetype',
+                    url: url,
+                    isForMainFrame: true,
+                  ),
+                );
+              }
             }
           },
     );

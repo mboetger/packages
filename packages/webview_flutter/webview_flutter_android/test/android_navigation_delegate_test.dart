@@ -516,6 +516,32 @@ void main() {
       },
     );
 
+    test(
+      'onWebResourceError from onDownloadStart',
+      () {
+        final androidNavigationDelegate = AndroidNavigationDelegate(_buildCreationParams());
+
+        WebResourceError? callbackError;
+        androidNavigationDelegate.setOnWebResourceError((WebResourceError error) {
+          callbackError = error;
+        });
+
+        CapturingDownloadListener.lastCreatedListener.onDownloadStart(
+          MockDownloadListener(),
+          'https://www.google.com',
+          'userAgent',
+          'contentDisposition',
+          'mimetype',
+          100,
+        );
+
+        expect(callbackError, isNotNull);
+        expect(callbackError!.errorCode, -17);
+        expect(callbackError!.errorType?.toString(), 'WebResourceErrorType.unsupportedContentType');
+      },
+    );
+
+
     test('onUrlChange', () {
       final androidNavigationDelegate = AndroidNavigationDelegate(_buildCreationParams());
 

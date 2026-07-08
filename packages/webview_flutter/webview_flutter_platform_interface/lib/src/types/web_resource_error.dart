@@ -65,6 +65,9 @@ enum WebResourceErrorType {
 
   /// The result of JavaScript execution could not be returned.
   javaScriptResultTypeIsUnsupported,
+
+  /// Unsupported content type.
+  unsupportedContentType,
 }
 
 /// Error returned in `WebView.onWebResourceError` when a web resource loading error has occurred.
