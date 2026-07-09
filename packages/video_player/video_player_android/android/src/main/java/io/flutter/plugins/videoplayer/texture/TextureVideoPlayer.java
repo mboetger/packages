@@ -14,6 +14,7 @@ import androidx.media3.common.MediaItem;
 import androidx.media3.common.util.UnstableApi;
 import androidx.media3.exoplayer.DefaultLoadControl;
 import androidx.media3.exoplayer.ExoPlayer;
+import androidx.media3.exoplayer.DefaultLoadControl;
 import io.flutter.plugins.videoplayer.ExoPlayerEventListener;
 import io.flutter.plugins.videoplayer.VideoAsset;
 import io.flutter.plugins.videoplayer.VideoPlayer;
@@ -58,6 +59,15 @@ public final class TextureVideoPlayer extends VideoPlayer implements SurfaceProd
         options,
         () -> {
           ExoPlayer.Builder builder = new ExoPlayer.Builder(context);
+          DefaultLoadControl.Builder loadControlBuilder =
+              new DefaultLoadControl.Builder()
+                  .setBufferDurationsMs(
+                      15000,
+                      50000,
+                      2500,
+                      5000)
+                  .setPrioritizeTimeOverSizeThresholds(true);
+
           if (options.backBufferDurationMs != null) {
             if (options.backBufferDurationMs < 0) {
               throw new IllegalArgumentException("backBufferDurationMs must be at least 0");
@@ -67,13 +77,11 @@ public final class TextureVideoPlayer extends VideoPlayer implements SurfaceProd
               // DefaultLoadControl.
               int backBufferInt =
                   (int) Math.min(options.backBufferDurationMs.longValue(), Integer.MAX_VALUE);
-              DefaultLoadControl loadControl =
-                  new DefaultLoadControl.Builder()
-                      .setBackBuffer(backBufferInt, /* retainBackBufferFromKeyframe= */ true)
-                      .build();
-              builder.setLoadControl(loadControl);
+              loadControlBuilder.setBackBuffer(backBufferInt, /* retainBackBufferFromKeyframe= */ true);
             }
           }
+          builder.setLoadControl(loadControlBuilder.build());
+
           androidx.media3.exoplayer.trackselection.DefaultTrackSelector trackSelector =
               new androidx.media3.exoplayer.trackselection.DefaultTrackSelector(context);
           builder
