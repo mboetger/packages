@@ -135,7 +135,7 @@ class Camera
   /** True when the preview is paused. */
   @VisibleForTesting boolean pausedPreview;
 
-  private File captureFile;
+  @VisibleForTesting File captureFile;
 
   /** Holds the current capture timeouts */
   private CaptureTimeoutsWrapper captureTimeouts;
@@ -911,6 +911,12 @@ class Camera
       mediaRecorder.stop();
     } catch (CameraAccessException | IllegalStateException e) {
       // Ignore exceptions and try to continue (changes are camera session already aborted capture).
+    } catch (RuntimeException e) {
+      if (captureFile != null && captureFile.exists()) {
+        captureFile.delete();
+      }
+      captureFile = null;
+      throw new Messages.FlutterError("videoRecordingFailed", e.getMessage(), null);
     }
     mediaRecorder.reset();
     try {

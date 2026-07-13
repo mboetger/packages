@@ -7,6 +7,7 @@ package io.flutter.plugins.camera;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -1404,6 +1405,48 @@ public class CameraTest {
     camera.pausePreview();
 
     verify(mockCaptureSession, never()).stopRepeating();
+  }
+
+  @Test
+  public void stopVideoRecording_shouldReturnPathWhenSuccessful() throws Exception {
+    Camera cameraSpy = spy(camera);
+    MediaRecorder mockMediaRecorder = mock(MediaRecorder.class);
+    cameraSpy.mediaRecorder = mockMediaRecorder;
+    cameraSpy.recordingVideo = true;
+
+    File mockFile = File.createTempFile("test_stop_successful", ".mp4");
+    mockFile.deleteOnExit();
+    cameraSpy.captureFile = mockFile;
+
+    doNothing().when(cameraSpy).startPreview(null);
+
+    String path = cameraSpy.stopVideoRecording();
+
+    assertEquals(mockFile.getAbsolutePath(), path);
+    assertNull(cameraSpy.captureFile);
+    verify(mockMediaRecorder, times(1)).stop();
+    verify(mockMediaRecorder, times(1)).reset();
+  }
+
+  @Test
+  public void stopVideoRecording_shouldThrowAndCleanUpFileWhenMediaRecorderStopThrowsRuntimeException() throws Exception {
+    Camera cameraSpy = spy(camera);
+    MediaRecorder mockMediaRecorder = mock(MediaRecorder.class);
+    cameraSpy.mediaRecorder = mockMediaRecorder;
+    cameraSpy.recordingVideo = true;
+
+    File mockFile = File.createTempFile("test_stop_failed", ".mp4");
+    mockFile.deleteOnExit();
+    cameraSpy.captureFile = mockFile;
+
+    doThrow(new RuntimeException("stop failed.")).when(mockMediaRecorder).stop();
+    doNothing().when(cameraSpy).startPreview(null);
+
+    assertThrows(Messages.FlutterError.class, cameraSpy::stopVideoRecording);
+
+    assertNull(cameraSpy.captureFile);
+    assertFalse(mockFile.exists());
+    verify(mockMediaRecorder, never()).reset();
   }
 
   /// Allow to use `new android.util.Range(Integer, Integer)`
