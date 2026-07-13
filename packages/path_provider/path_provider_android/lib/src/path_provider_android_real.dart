@@ -78,8 +78,36 @@ class PathProviderAndroid extends PathProviderPlatform {
     final JArray<File?>? files = _applicationContext.getExternalFilesDirs(directory);
     directory?.release();
     if (files != null) {
-      final List<String> paths = _toStringList(files);
+      List<String> paths = _toStringList(files);
       files.release();
+
+      // Workaround for issue 77967: getExternalFilesDirs(null) sometimes ignores SD card.
+      // If type is null and we only found one path, we try to call it with a specific type
+      // (like Documents) and strip the suffix to see if it finds more paths (e.g. SD card).
+      if (type == null && paths.length == 1) {
+        final JString docDirectory = Environment.DIRECTORY_DOCUMENTS!;
+        final JArray<File?>? docFiles = _applicationContext.getExternalFilesDirs(docDirectory);
+        final String docDirName = docDirectory.toDartString(releaseOriginal: true);
+        if (docFiles != null) {
+          final List<String> docPaths = _toStringList(docFiles);
+          docFiles.release();
+
+          final suffix = '/$docDirName';
+          final strippedPaths = <String>[];
+          for (final path in docPaths) {
+            if (path.endsWith(suffix)) {
+              strippedPaths.add(path.substring(0, path.length - suffix.length));
+            } else {
+              strippedPaths.add(path);
+            }
+          }
+
+          // Merge and keep unique paths
+          final uniquePaths = {...paths, ...strippedPaths};
+          paths = uniquePaths.toList();
+        }
+      }
+
       return paths;
     }
 
