@@ -11,6 +11,9 @@ import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import android.content.Context;
+import android.content.res.Resources;
+import android.util.DisplayMetrics;
 import android.view.View;
 import androidx.core.graphics.Insets;
 import androidx.core.view.OnApplyWindowInsetsListener;
@@ -27,11 +30,19 @@ public class ViewTest {
     final PigeonApiView api = new TestProxyApiRegistrar().getPigeonApiView();
 
     final View instance = mock(View.class);
-    final long x = 0L;
-    final long y = 1L;
+    final Context context = mock(Context.class);
+    final Resources resources = mock(Resources.class);
+    final DisplayMetrics displayMetrics = new DisplayMetrics();
+    displayMetrics.density = 2.0f;
+    when(instance.getContext()).thenReturn(context);
+    when(context.getResources()).thenReturn(resources);
+    when(resources.getDisplayMetrics()).thenReturn(displayMetrics);
+
+    final long x = 10L;
+    final long y = 20L;
     api.scrollTo(instance, x, y);
 
-    verify(instance).scrollTo((int) x, (int) y);
+    verify(instance).scrollTo(20, 40);
   }
 
   @Test
@@ -39,11 +50,19 @@ public class ViewTest {
     final PigeonApiView api = new TestProxyApiRegistrar().getPigeonApiView();
 
     final View instance = mock(View.class);
-    final long x = 0L;
-    final long y = 1L;
+    final Context context = mock(Context.class);
+    final Resources resources = mock(Resources.class);
+    final DisplayMetrics displayMetrics = new DisplayMetrics();
+    displayMetrics.density = 2.0f;
+    when(instance.getContext()).thenReturn(context);
+    when(context.getResources()).thenReturn(resources);
+    when(resources.getDisplayMetrics()).thenReturn(displayMetrics);
+
+    final long x = 10L;
+    final long y = 20L;
     api.scrollBy(instance, x, y);
 
-    verify(instance).scrollBy((int) x, (int) y);
+    verify(instance).scrollBy(20, 40);
   }
 
   @Test
@@ -51,12 +70,19 @@ public class ViewTest {
     final PigeonApiView api = new TestProxyApiRegistrar().getPigeonApiView();
 
     final View instance = mock(View.class);
-    final WebViewPoint value = new WebViewPoint(0L, 1L);
-    when(instance.getScrollX()).thenReturn((int) value.getX());
-    when(instance.getScrollY()).thenReturn((int) value.getY());
+    final Context context = mock(Context.class);
+    final Resources resources = mock(Resources.class);
+    final DisplayMetrics displayMetrics = new DisplayMetrics();
+    displayMetrics.density = 2.0f;
+    when(instance.getContext()).thenReturn(context);
+    when(context.getResources()).thenReturn(resources);
+    when(resources.getDisplayMetrics()).thenReturn(displayMetrics);
 
-    assertEquals(value.getX(), api.getScrollPosition(instance).getX());
-    assertEquals(value.getY(), api.getScrollPosition(instance).getY());
+    when(instance.getScrollX()).thenReturn(20);
+    when(instance.getScrollY()).thenReturn(40);
+
+    assertEquals(10L, api.getScrollPosition(instance).getX());
+    assertEquals(20L, api.getScrollPosition(instance).getY());
   }
 
   @Test

@@ -14,6 +14,9 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import android.content.Context;
+import android.content.res.Resources;
+import android.util.DisplayMetrics;
 import android.view.View;
 import android.webkit.DownloadListener;
 import android.webkit.ValueCallback;
@@ -355,18 +358,27 @@ public class WebViewTest {
   @Test
   public void onScrollChanged() {
     final WebViewProxyApi mockApi = mock(WebViewProxyApi.class);
-    when(mockApi.getPigeonRegistrar()).thenReturn(new TestProxyApiRegistrar());
+    final TestProxyApiRegistrar registrar = new TestProxyApiRegistrar();
+
+    final Context context = mock(Context.class);
+    final Resources resources = mock(Resources.class);
+    final DisplayMetrics displayMetrics = new DisplayMetrics();
+    displayMetrics.density = 2.0f;
+    when(context.getResources()).thenReturn(resources);
+    when(resources.getDisplayMetrics()).thenReturn(displayMetrics);
+
+    registrar.setContext(context);
+    when(mockApi.getPigeonRegistrar()).thenReturn(registrar);
 
     final WebViewProxyApi.WebViewPlatformView instance =
         new WebViewProxyApi.WebViewPlatformView(mockApi);
-    final Long left = 0L;
-    final Long top = 0L;
-    final Long oldLeft = 0L;
-    final Long oldTop = 0L;
-    instance.onScrollChanged(
-        left.intValue(), top.intValue(), oldLeft.intValue(), oldTop.intValue());
+    final int left = 20;
+    final int top = 40;
+    final int oldLeft = 10;
+    final int oldTop = 30;
+    instance.onScrollChanged(left, top, oldLeft, oldTop);
 
     verify(mockApi)
-        .onScrollChanged(eq(instance), eq(left), eq(top), eq(oldLeft), eq(oldTop), any());
+        .onScrollChanged(eq(instance), eq(10L), eq(20L), eq(5L), eq(15L), any());
   }
 }

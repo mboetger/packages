@@ -117,11 +117,18 @@ public class WebViewProxyApi extends PigeonApiWebView {
     @Override
     protected void onScrollChanged(int left, int top, int oldLeft, int oldTop) {
       super.onScrollChanged(left, top, oldLeft, oldTop);
+      final float density =
+          api.getPigeonRegistrar().getContext().getResources().getDisplayMetrics().density;
       api.getPigeonRegistrar()
           .runOnMainThread(
               () ->
                   api.onScrollChanged(
-                      this, (long) left, (long) top, (long) oldLeft, (long) oldTop, reply -> null));
+                      this,
+                      (long) (left / density),
+                      (long) (top / density),
+                      (long) (oldLeft / density),
+                      (long) (oldTop / density),
+                      reply -> null));
     }
   }
 

@@ -31,18 +31,23 @@ public class ViewProxyApi extends PigeonApiView {
 
   @Override
   public void scrollTo(@NonNull View pigeon_instance, long x, long y) {
-    pigeon_instance.scrollTo((int) x, (int) y);
+    final float density = pigeon_instance.getContext().getResources().getDisplayMetrics().density;
+    pigeon_instance.scrollTo((int) (x * density), (int) (y * density));
   }
 
   @Override
   public void scrollBy(@NonNull View pigeon_instance, long x, long y) {
-    pigeon_instance.scrollBy((int) x, (int) y);
+    final float density = pigeon_instance.getContext().getResources().getDisplayMetrics().density;
+    pigeon_instance.scrollBy((int) (x * density), (int) (y * density));
   }
 
   @NonNull
   @Override
   public WebViewPoint getScrollPosition(@NonNull View pigeon_instance) {
-    return new WebViewPoint(pigeon_instance.getScrollX(), pigeon_instance.getScrollY());
+    final float density = pigeon_instance.getContext().getResources().getDisplayMetrics().density;
+    return new WebViewPoint(
+        (long) (pigeon_instance.getScrollX() / density),
+        (long) (pigeon_instance.getScrollY() / density));
   }
 
   @Override
