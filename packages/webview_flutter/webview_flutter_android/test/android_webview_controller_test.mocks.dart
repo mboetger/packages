@@ -143,6 +143,22 @@ class _FakeWebStorage_20 extends _i1.SmartFake implements _i2.WebStorage {
 /// See the documentation for Mockito's code generation for more information.
 class MockAndroidNavigationDelegate extends _i1.Mock implements _i7.AndroidNavigationDelegate {
   @override
+  Map<String, String> get lastLoadHeaders =>
+      (super.noSuchMethod(
+            Invocation.getter(#lastLoadHeaders),
+            returnValue: <String, String>{},
+            returnValueForMissingStub: <String, String>{},
+          )
+          as Map<String, String>);
+
+  @override
+  set lastLoadHeaders(Map<String, String>? _lastLoadHeaders) =>
+      super.noSuchMethod(
+        Invocation.setter(#lastLoadHeaders, _lastLoadHeaders),
+        returnValueForMissingStub: null,
+      );
+
+  @override
   _i2.WebChromeClient get androidWebChromeClient =>
       (super.noSuchMethod(
             Invocation.getter(#androidWebChromeClient),

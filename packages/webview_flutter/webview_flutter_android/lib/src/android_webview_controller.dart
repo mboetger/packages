@@ -372,6 +372,8 @@ class AndroidWebViewController extends PlatformWebViewController {
 
   AndroidNavigationDelegate? _currentNavigationDelegate;
 
+  Map<String, String> _lastLoadHeaders = const <String, String>{};
+
   Future<List<String>> Function(FileSelectorParams)? _onShowFileSelectorCallback;
 
   OnGeolocationPermissionsShowPrompt? _onGeolocationPermissionsShowPrompt;
@@ -460,6 +462,8 @@ class AndroidWebViewController extends PlatformWebViewController {
     if (!params.uri.hasScheme) {
       throw ArgumentError('WebViewRequest#uri is required to have a scheme.');
     }
+    _lastLoadHeaders = params.headers;
+    _currentNavigationDelegate?.lastLoadHeaders = params.headers;
     switch (params.method) {
       case LoadRequestMethod.get:
         return _webView.loadUrl(params.uri.toString(), params.headers);
@@ -506,6 +510,7 @@ class AndroidWebViewController extends PlatformWebViewController {
   @override
   Future<void> setPlatformNavigationDelegate(covariant AndroidNavigationDelegate handler) async {
     _currentNavigationDelegate = handler;
+    handler.lastLoadHeaders = _lastLoadHeaders;
     await Future.wait(<Future<void>>[
       handler.setOnLoadRequest(loadRequest),
       _webView.setWebViewClient(handler.androidWebViewClient),
@@ -1450,6 +1455,7 @@ class AndroidNavigationDelegate extends PlatformNavigationDelegate {
                   }) ??
                   <String, String>{},
               isForMainFrame: request.isForMainFrame,
+              isRedirect: request.isRedirect,
             );
           },
       urlLoading: (_, android_webview.WebView webView, String url) {
@@ -1554,6 +1560,9 @@ class AndroidNavigationDelegate extends PlatformNavigationDelegate {
   /// Used by the [AndroidWebViewController] to set the `android_webview.WebView.setDownloadListener`.
   android_webview.DownloadListener get androidDownloadListener => _downloadListener;
 
+  @visibleForTesting
+  Map<String, String> lastLoadHeaders = const <String, String>{};
+
   PageEventCallback? _onPageFinished;
   PageEventCallback? _onPageStarted;
   HttpResponseErrorCallback? _onHttpError;
@@ -1569,6 +1578,7 @@ class AndroidNavigationDelegate extends PlatformNavigationDelegate {
     String url, {
     required bool isForMainFrame,
     Map<String, String> headers = const <String, String>{},
+    bool isRedirect = false,
   }) {
     final LoadRequestCallback? onLoadRequest = _onLoadRequest;
     final NavigationRequestCallback? onNavigationRequest = _onNavigationRequest;
@@ -1583,12 +1593,15 @@ class AndroidNavigationDelegate extends PlatformNavigationDelegate {
       NavigationRequest(url: url, isMainFrame: isForMainFrame),
     );
 
+    final Map<String, String> headersToUse =
+        isRedirect ? {...lastLoadHeaders, ...headers} : headers;
+
     if (returnValue is NavigationDecision && returnValue == NavigationDecision.navigate) {
-      onLoadRequest(LoadRequestParams(uri: Uri.parse(url), headers: headers));
+      onLoadRequest(LoadRequestParams(uri: Uri.parse(url), headers: headersToUse));
     } else if (returnValue is Future<NavigationDecision>) {
       returnValue.then((NavigationDecision shouldLoadUrl) {
         if (shouldLoadUrl == NavigationDecision.navigate) {
-          onLoadRequest(LoadRequestParams(uri: Uri.parse(url), headers: headers));
+          onLoadRequest(LoadRequestParams(uri: Uri.parse(url), headers: headersToUse));
         }
       });
     }
