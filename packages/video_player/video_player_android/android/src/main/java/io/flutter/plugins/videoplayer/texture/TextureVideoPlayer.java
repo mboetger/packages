@@ -74,6 +74,11 @@ public final class TextureVideoPlayer extends VideoPlayer implements SurfaceProd
               builder.setLoadControl(loadControl);
             }
           }
+          androidx.media3.exoplayer.DefaultRenderersFactory renderersFactory =
+              new androidx.media3.exoplayer.DefaultRenderersFactory(context)
+                  .setEnableDecoderFallback(true);
+          builder.setRenderersFactory(renderersFactory);
+
           androidx.media3.exoplayer.trackselection.DefaultTrackSelector trackSelector =
               new androidx.media3.exoplayer.trackselection.DefaultTrackSelector(context);
           builder
