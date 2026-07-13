@@ -77,12 +77,19 @@ class PlatformVideoViewCreationParams {
 }
 
 class CreationOptions {
-  CreationOptions({required this.uri, required this.httpHeaders});
+  CreationOptions({
+    required this.uri,
+    required this.httpHeaders,
+    required this.flagDetectAccessUnits,
+    required this.flagAllowNonIdrKeyframes,
+  });
   String uri;
   PlatformVideoFormat? formatHint;
   Map<String, String> httpHeaders;
   String? userAgent;
   int? backBufferDurationMs;
+  bool flagDetectAccessUnits;
+  bool flagAllowNonIdrKeyframes;
 }
 
 class TexturePlayerIds {

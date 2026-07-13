@@ -82,7 +82,9 @@ public class VideoPlayerPluginTest {
               null,
               new HashMap<>(),
               null,
-              null);
+              null,
+              false,
+              false);
 
       final long playerId = plugin.createForPlatformView(options);
 
@@ -105,7 +107,9 @@ public class VideoPlayerPluginTest {
               null,
               new HashMap<>(),
               null,
-              null);
+              null,
+              false,
+              false);
 
       final TexturePlayerIds ids = plugin.createForTextureView(options);
 

@@ -17,6 +17,8 @@ import androidx.media3.datasource.DefaultDataSource;
 import androidx.media3.datasource.DefaultHttpDataSource;
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory;
 import androidx.media3.exoplayer.source.MediaSource;
+import androidx.media3.extractor.DefaultExtractorsFactory;
+import androidx.media3.extractor.ts.DefaultTsPayloadReaderFactory;
 import java.util.Map;
 
 final class HttpVideoAsset extends VideoAsset {
@@ -28,8 +30,10 @@ final class HttpVideoAsset extends VideoAsset {
       @Nullable String assetUrl,
       @NonNull StreamingFormat streamingFormat,
       @NonNull Map<String, String> httpHeaders,
-      @Nullable String userAgent) {
-    super(assetUrl);
+      @Nullable String userAgent,
+      boolean flagDetectAccessUnits,
+      boolean flagAllowNonIdrKeyframes) {
+    super(assetUrl, flagDetectAccessUnits, flagAllowNonIdrKeyframes);
     this.streamingFormat = streamingFormat;
     this.httpHeaders = httpHeaders;
     this.userAgent = userAgent;
@@ -77,7 +81,16 @@ final class HttpVideoAsset extends VideoAsset {
       Context context, DefaultHttpDataSource.Factory initialFactory) {
     unstableUpdateDataSourceFactory(initialFactory, httpHeaders, userAgent);
     DataSource.Factory dataSourceFactory = new DefaultDataSource.Factory(context, initialFactory);
-    return new DefaultMediaSourceFactory(context).setDataSourceFactory(dataSourceFactory);
+    DefaultExtractorsFactory extractorsFactory = new DefaultExtractorsFactory();
+    int tsExtractorFlags = 0;
+    if (flagDetectAccessUnits) {
+      tsExtractorFlags |= DefaultTsPayloadReaderFactory.FLAG_DETECT_ACCESS_UNITS;
+    }
+    if (flagAllowNonIdrKeyframes) {
+      tsExtractorFlags |= DefaultTsPayloadReaderFactory.FLAG_ALLOW_NON_IDR_KEYFRAMES;
+    }
+    extractorsFactory.setTsExtractorFlags(tsExtractorFlags);
+    return new DefaultMediaSourceFactory(dataSourceFactory, extractorsFactory);
   }
 
   // TODO: Migrate to stable API, see https://github.com/flutter/flutter/issues/147039.

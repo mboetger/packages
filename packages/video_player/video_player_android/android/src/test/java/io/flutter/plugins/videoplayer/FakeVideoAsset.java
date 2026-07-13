@@ -19,7 +19,7 @@ final class FakeVideoAsset extends VideoAsset {
   }
 
   FakeVideoAsset(String assetUrl, @NonNull MediaSource.Factory mediaSourceFactory) {
-    super(assetUrl);
+    super(assetUrl, false, false);
     this.mediaSourceFactory = mediaSourceFactory;
   }
 

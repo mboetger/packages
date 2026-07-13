@@ -14,7 +14,7 @@ import androidx.media3.exoplayer.source.MediaSource;
 
 final class RtspVideoAsset extends VideoAsset {
   RtspVideoAsset(@NonNull String assetUrl) {
-    super(assetUrl);
+    super(assetUrl, false, false);
   }
 
   @NonNull

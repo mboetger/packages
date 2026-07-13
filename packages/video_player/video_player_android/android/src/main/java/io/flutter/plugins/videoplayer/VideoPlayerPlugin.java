@@ -126,8 +126,10 @@ public class VideoPlayerPlugin implements FlutterPlugin, AndroidVideoPlayerApi {
 
   private @NonNull VideoAsset videoAssetWithOptions(@NonNull CreationOptions options) {
     final @NonNull String uri = options.getUri();
+    final boolean flagDetectAccessUnits = options.getFlagDetectAccessUnits();
+    final boolean flagAllowNonIdrKeyframes = options.getFlagAllowNonIdrKeyframes();
     if (uri.startsWith("asset:")) {
-      return VideoAsset.fromAssetUrl(uri);
+      return VideoAsset.fromAssetUrl(uri, flagDetectAccessUnits, flagAllowNonIdrKeyframes);
     } else if (uri.startsWith("rtsp:")) {
       return VideoAsset.fromRtspUrl(uri);
     } else {
@@ -147,7 +149,12 @@ public class VideoPlayerPlugin implements FlutterPlugin, AndroidVideoPlayerApi {
         }
       }
       return VideoAsset.fromRemoteUrl(
-          uri, streamingFormat, options.getHttpHeaders(), options.getUserAgent());
+          uri,
+          streamingFormat,
+          options.getHttpHeaders(),
+          options.getUserAgent(),
+          flagDetectAccessUnits,
+          flagAllowNonIdrKeyframes);
     }
   }
 

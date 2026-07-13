@@ -21,11 +21,14 @@ public abstract class VideoAsset {
    * @return the asset.
    */
   @NonNull
-  static VideoAsset fromAssetUrl(@NonNull String assetUrl) {
+  static VideoAsset fromAssetUrl(
+      @NonNull String assetUrl,
+      boolean flagDetectAccessUnits,
+      boolean flagAllowNonIdrKeyframes) {
     if (!assetUrl.startsWith("asset:///")) {
       throw new IllegalArgumentException("assetUrl must start with 'asset:///'");
     }
-    return new LocalVideoAsset(assetUrl);
+    return new LocalVideoAsset(assetUrl, flagDetectAccessUnits, flagAllowNonIdrKeyframes);
   }
 
   /**
@@ -41,8 +44,16 @@ public abstract class VideoAsset {
       @Nullable String remoteUrl,
       @NonNull StreamingFormat streamingFormat,
       @NonNull Map<String, String> httpHeaders,
-      @Nullable String userAgent) {
-    return new HttpVideoAsset(remoteUrl, streamingFormat, new HashMap<>(httpHeaders), userAgent);
+      @Nullable String userAgent,
+      boolean flagDetectAccessUnits,
+      boolean flagAllowNonIdrKeyframes) {
+    return new HttpVideoAsset(
+        remoteUrl,
+        streamingFormat,
+        new HashMap<>(httpHeaders),
+        userAgent,
+        flagDetectAccessUnits,
+        flagAllowNonIdrKeyframes);
   }
 
   /**
@@ -60,9 +71,16 @@ public abstract class VideoAsset {
   }
 
   @Nullable protected final String assetUrl;
+  protected final boolean flagDetectAccessUnits;
+  protected final boolean flagAllowNonIdrKeyframes;
 
-  protected VideoAsset(@Nullable String assetUrl) {
+  protected VideoAsset(
+      @Nullable String assetUrl,
+      boolean flagDetectAccessUnits,
+      boolean flagAllowNonIdrKeyframes) {
     this.assetUrl = assetUrl;
+    this.flagDetectAccessUnits = flagDetectAccessUnits;
+    this.flagAllowNonIdrKeyframes = flagAllowNonIdrKeyframes;
   }
 
   /**

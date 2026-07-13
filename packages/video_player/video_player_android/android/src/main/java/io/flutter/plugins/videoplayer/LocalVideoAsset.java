@@ -10,9 +10,15 @@ import androidx.media3.common.MediaItem;
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory;
 import androidx.media3.exoplayer.source.MediaSource;
 
+import androidx.media3.extractor.DefaultExtractorsFactory;
+import androidx.media3.extractor.ts.DefaultTsPayloadReaderFactory;
+
 final class LocalVideoAsset extends VideoAsset {
-  LocalVideoAsset(@NonNull String assetUrl) {
-    super(assetUrl);
+  LocalVideoAsset(
+      @NonNull String assetUrl,
+      boolean flagDetectAccessUnits,
+      boolean flagAllowNonIdrKeyframes) {
+    super(assetUrl, flagDetectAccessUnits, flagAllowNonIdrKeyframes);
   }
 
   @NonNull
@@ -24,6 +30,15 @@ final class LocalVideoAsset extends VideoAsset {
   @NonNull
   @Override
   public MediaSource.Factory getMediaSourceFactory(@NonNull Context context) {
-    return new DefaultMediaSourceFactory(context);
+    DefaultExtractorsFactory extractorsFactory = new DefaultExtractorsFactory();
+    int tsExtractorFlags = 0;
+    if (flagDetectAccessUnits) {
+      tsExtractorFlags |= DefaultTsPayloadReaderFactory.FLAG_DETECT_ACCESS_UNITS;
+    }
+    if (flagAllowNonIdrKeyframes) {
+      tsExtractorFlags |= DefaultTsPayloadReaderFactory.FLAG_ALLOW_NON_IDR_KEYFRAMES;
+    }
+    extractorsFactory.setTsExtractorFlags(tsExtractorFlags);
+    return new DefaultMediaSourceFactory(context, extractorsFactory);
   }
 }

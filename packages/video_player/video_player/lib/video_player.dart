@@ -21,6 +21,7 @@ export 'package:video_player_platform_interface/video_player_platform_interface.
         DurationRange,
         VideoFormat,
         VideoPlayerOptions,
+        VideoPlayerAndroidOptions,
         VideoPlayerWebOptions,
         VideoPlayerWebOptionsControls,
         VideoViewType;

@@ -1176,5 +1176,51 @@ void main() {
         expect(explicitCompleted, isTrue);
       });
     });
+
+    test('ExoPlayer extraction flags feature is present (reproduction for flutter/flutter#75304)', () {
+      final options = CreationOptions(
+        uri: 'http://foo',
+        httpHeaders: <String, String>{},
+        flagDetectAccessUnits: true,
+        flagAllowNonIdrKeyframes: true,
+      );
+      final encoded = options.encode() as List<Object?>;
+      expect(
+        encoded.length,
+        greaterThan(4),
+        reason: 'CreationOptions should have more than 4 elements to support ExoPlayer extractor flags configuration.',
+      );
+    });
+
+    test('create with android options passes extractor flags', () async {
+      final (AndroidVideoPlayer player, MockAndroidVideoPlayerApi api, _) = setUpMockPlayer(
+        playerId: 1,
+        textureId: 100,
+      );
+      when(
+        api.createForTextureView(any),
+      ).thenAnswer((_) async => TexturePlayerIds(playerId: 2, textureId: 100));
+
+      await player.createWithOptions(
+        VideoCreationOptions(
+          dataSource: DataSource(
+            sourceType: DataSourceType.network,
+            uri: 'https://example.com',
+          ),
+          viewType: VideoViewType.textureView,
+          videoPlayerOptions: VideoPlayerOptions(
+            androidOptions: const VideoPlayerAndroidOptions(
+              flagDetectAccessUnits: true,
+              flagAllowNonIdrKeyframes: true,
+            ),
+          ),
+        ),
+      );
+      final VerificationResult verification = verify(api.createForTextureView(captureAny));
+      final creationOptions = verification.captured[0] as CreationOptions;
+      expect(creationOptions.flagDetectAccessUnits, true);
+      expect(creationOptions.flagAllowNonIdrKeyframes, true);
+    });
   });
 }
+

@@ -104,6 +104,13 @@ class AndroidVideoPlayer extends VideoPlayerPlatform {
       userAgent: userAgent,
       formatHint: formatHint,
       backBufferDurationMs: options.videoPlayerOptions?.backBufferDurationMs,
+      flagDetectAccessUnits:
+          options.videoPlayerOptions?.androidOptions?.flagDetectAccessUnits ??
+          false,
+      flagAllowNonIdrKeyframes:
+          options.videoPlayerOptions?.androidOptions
+                  ?.flagAllowNonIdrKeyframes ??
+              false,
     );
 
     final int playerId;

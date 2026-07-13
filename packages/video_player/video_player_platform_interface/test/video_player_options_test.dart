@@ -26,4 +26,18 @@ void main() {
     final options = VideoPlayerOptions(backBufferDurationMs: 20000);
     expect(options.backBufferDurationMs, 20000);
   });
+  test('VideoPlayerOptions androidOptions defaults to null', () {
+    final options = VideoPlayerOptions();
+    expect(options.androidOptions, null);
+  });
+  test('VideoPlayerOptions androidOptions stores configured value', () {
+    final options = VideoPlayerOptions(
+      androidOptions: const VideoPlayerAndroidOptions(
+        flagDetectAccessUnits: true,
+        flagAllowNonIdrKeyframes: true,
+      ),
+    );
+    expect(options.androidOptions?.flagDetectAccessUnits, true);
+    expect(options.androidOptions?.flagAllowNonIdrKeyframes, true);
+  });
 }

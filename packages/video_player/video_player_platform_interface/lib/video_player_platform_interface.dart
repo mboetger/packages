@@ -472,6 +472,7 @@ class VideoPlayerOptions {
     this.allowBackgroundPlayback = false,
     this.preventsDisplaySleepDuringVideoPlayback = true,
     this.webOptions,
+    this.androidOptions,
     this.backBufferDurationMs,
   }) : assert(
          backBufferDurationMs == null || backBufferDurationMs >= 0,
@@ -499,11 +500,30 @@ class VideoPlayerOptions {
   /// Additional web controls
   final VideoPlayerWebOptions? webOptions;
 
+  /// Additional Android options
+  final VideoPlayerAndroidOptions? androidOptions;
+
   /// The duration, in milliseconds, of media to retain in the buffer prior to
   /// the current playback position.
   ///
   /// Ignored on platforms that do not support controlling the back buffer.
   final int? backBufferDurationMs;
+}
+
+/// [VideoPlayerAndroidOptions] can be optionally used to set additional Android settings.
+@immutable
+class VideoPlayerAndroidOptions {
+  /// [VideoPlayerAndroidOptions] can be optionally used to set additional Android settings.
+  const VideoPlayerAndroidOptions({
+    this.flagDetectAccessUnits = false,
+    this.flagAllowNonIdrKeyframes = false,
+  });
+
+  /// ExoPlayer flag to enable detection of access units.
+  final bool flagDetectAccessUnits;
+
+  /// ExoPlayer flag to allow non-IDR keyframes.
+  final bool flagAllowNonIdrKeyframes;
 }
 
 /// [VideoPlayerWebOptions] can be optionally used to set additional web settings

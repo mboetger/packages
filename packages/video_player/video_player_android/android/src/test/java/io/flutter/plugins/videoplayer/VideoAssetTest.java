@@ -41,12 +41,12 @@ public final class VideoAssetTest {
   public void localVideoRequiresAssetUrl() {
     assertThrows(
         IllegalArgumentException.class,
-        () -> VideoAsset.fromAssetUrl("https://not.local/video.mp4"));
+        () -> VideoAsset.fromAssetUrl("https://not.local/video.mp4", false, false));
   }
 
   @Test
   public void localVideoCreatesMediaItem() {
-    VideoAsset asset = VideoAsset.fromAssetUrl("asset:///asset-key");
+    VideoAsset asset = VideoAsset.fromAssetUrl("asset:///asset-key", false, false);
     MediaItem mediaItem = asset.getMediaItem();
 
     assert mediaItem.localConfiguration != null;
@@ -69,7 +69,9 @@ public final class VideoAssetTest {
             "https://flutter.dev/video.mp4",
             VideoAsset.StreamingFormat.UNKNOWN,
             new HashMap<>(),
-            userAgent);
+            userAgent,
+            false,
+            false);
 
     DefaultHttpDataSource.Factory mockFactory = mockHttpFactory();
 
@@ -92,7 +94,9 @@ public final class VideoAssetTest {
             "https://flutter.dev/video.mp4",
             VideoAsset.StreamingFormat.UNKNOWN,
             new HashMap<>(),
-            null);
+            null,
+            false,
+            false);
 
     MediaSource source =
         asset
@@ -110,7 +114,12 @@ public final class VideoAssetTest {
 
     VideoAsset asset =
         VideoAsset.fromRemoteUrl(
-            "https://flutter.dev/video.mp4", VideoAsset.StreamingFormat.UNKNOWN, headers, null);
+            "https://flutter.dev/video.mp4",
+            VideoAsset.StreamingFormat.UNKNOWN,
+            headers,
+            null,
+            false,
+            false);
 
     DefaultHttpDataSource.Factory mockFactory = mockHttpFactory();
 

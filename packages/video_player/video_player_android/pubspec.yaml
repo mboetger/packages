@@ -30,6 +30,10 @@ dev_dependencies:
   mockito: ^5.4.4
   pigeon: ^26.3.4
 
+dependency_overrides:
+  video_player_platform_interface:
+    path: ../video_player_platform_interface
+
 topics:
   - video
   - video-player
