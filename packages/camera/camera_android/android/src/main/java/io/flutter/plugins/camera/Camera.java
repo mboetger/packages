@@ -1348,9 +1348,13 @@ class Camera
   void closeCaptureSession() {
     if (captureSession != null) {
       Log.i(TAG, "closeCaptureSession");
-
-      captureSession.close();
-      captureSession = null;
+      try {
+        captureSession.close();
+      } catch (Exception e) {
+        Log.e(TAG, "Exception while closing capture session", e);
+      } finally {
+        captureSession = null;
+      }
     }
   }
 

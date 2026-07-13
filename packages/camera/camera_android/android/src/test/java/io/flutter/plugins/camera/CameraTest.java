@@ -1258,6 +1258,15 @@ public class CameraTest {
   }
 
   @Test
+  public void close_doesNotCrashWhenCaptureSessionCloseThrowsException() {
+    doThrow(new IllegalStateException("Closed session")).when(mockCaptureSession).close();
+
+    camera.close();
+
+    verify(mockCaptureSession).close();
+  }
+
+  @Test
   public void close_doesNotCloseCaptureSessionWhenCameraDeviceNonNull() {
     ArrayList<CaptureRequest.Builder> mockRequestBuilders = new ArrayList<>();
     mockRequestBuilders.add(mock(CaptureRequest.Builder.class));
