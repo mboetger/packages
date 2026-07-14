@@ -144,6 +144,7 @@ class Camera
   private CameraCaptureProperties captureProps;
 
   Messages.Result<String> flutterResult;
+  private boolean isClosed = false;
 
   /** A CameraDeviceWrapper implementation that forwards calls to a CameraDevice. */
   private class DefaultCameraDeviceWrapper implements CameraDeviceWrapper {
@@ -417,6 +418,7 @@ class Camera
             cameraDevice = null;
             closeCaptureSession();
             dartMessenger.sendCameraClosingEvent();
+            stopBackgroundThread();
           }
 
           @Override
@@ -1356,6 +1358,12 @@ class Camera
 
   public void close() {
     Log.i(TAG, "close");
+    if (isClosed) {
+      return;
+    }
+    isClosed = true;
+
+    boolean shouldStopBackgroundThreadImmediately = (cameraDevice == null);
 
     stopAndReleaseCamera();
 
@@ -1373,7 +1381,9 @@ class Camera
       mediaRecorder = null;
     }
 
-    stopBackgroundThread();
+    if (shouldStopBackgroundThreadImmediately) {
+      stopBackgroundThread();
+    }
   }
 
   private void stopAndReleaseCamera() {
