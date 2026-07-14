@@ -1193,6 +1193,25 @@ public class CameraTest {
   }
 
   @Test
+  public void unlockAutoFocus_shouldNotCrashIfCaptureSessionIsNulledDuringExecution() throws CameraAccessException {
+    // Stub previewRequestBuilder.set to simulate another thread setting captureSession to null
+    // during the execution of unlockAutoFocus.
+    doAnswer(
+            invocation -> {
+              camera.captureSession = null;
+              return null;
+            })
+        .when(mockPreviewRequestBuilder)
+        .set(any(), any());
+
+    // Should not throw NullPointerException.
+    camera.unlockAutoFocus();
+
+    // Verify that capture was called on the local reference before it was nulled.
+    verify(mockCaptureSession, times(2)).capture(any(), any(), any());
+  }
+
+  @Test
   public void createCaptureSession_doesNotCloseCaptureSession() throws CameraAccessException {
     Surface mockSurface = mock(Surface.class);
     SurfaceTexture mockSurfaceTexture = mock(SurfaceTexture.class);

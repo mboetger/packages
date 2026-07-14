@@ -813,8 +813,9 @@ class Camera
 
   private void lockAutoFocus() {
     Log.i(TAG, "lockAutoFocus");
-    if (captureSession == null) {
-      Log.i(TAG, "[unlockAutoFocus] captureSession null, returning");
+    final CameraCaptureSession localCaptureSession = captureSession;
+    if (localCaptureSession == null) {
+      Log.i(TAG, "[lockAutoFocus] captureSession null, returning");
       return;
     }
 
@@ -823,7 +824,7 @@ class Camera
         CaptureRequest.CONTROL_AF_TRIGGER, CaptureRequest.CONTROL_AF_TRIGGER_START);
 
     try {
-      captureSession.capture(
+      localCaptureSession.capture(
           previewRequestBuilder.build(),
           createTriggerResetCallback(
               CaptureRequest.CONTROL_AF_TRIGGER, CameraMetadata.CONTROL_AF_TRIGGER_IDLE),
@@ -840,7 +841,8 @@ class Camera
   /** Cancel and reset auto focus state and refresh the preview session. */
   void unlockAutoFocus() {
     Log.i(TAG, "unlockAutoFocus");
-    if (captureSession == null) {
+    final CameraCaptureSession localCaptureSession = captureSession;
+    if (localCaptureSession == null) {
       Log.i(TAG, "[unlockAutoFocus] captureSession null, returning");
       return;
     }
@@ -848,13 +850,13 @@ class Camera
       // Cancel existing AF state.
       previewRequestBuilder.set(
           CaptureRequest.CONTROL_AF_TRIGGER, CameraMetadata.CONTROL_AF_TRIGGER_CANCEL);
-      captureSession.capture(previewRequestBuilder.build(), null, backgroundHandler);
+      localCaptureSession.capture(previewRequestBuilder.build(), null, backgroundHandler);
 
       // Set AF state to idle again.
       previewRequestBuilder.set(
           CaptureRequest.CONTROL_AF_TRIGGER, CameraMetadata.CONTROL_AF_TRIGGER_IDLE);
 
-      captureSession.capture(previewRequestBuilder.build(), null, backgroundHandler);
+      localCaptureSession.capture(previewRequestBuilder.build(), null, backgroundHandler);
     } catch (CameraAccessException e) {
       String message =
           (e.getMessage() == null)
