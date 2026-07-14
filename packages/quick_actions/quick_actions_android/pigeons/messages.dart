@@ -37,6 +37,9 @@ abstract class AndroidQuickActionsApi {
 
   /// Removes all dynamic shortcuts.
   void clearShortcutItems();
+
+  /// Tells the native side that the Dart receiver has been registered.
+  void registerReceiver();
 }
 
 @FlutterApi()

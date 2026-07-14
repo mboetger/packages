@@ -10,17 +10,16 @@ package io.flutter.plugins.quickactions
 import android.util.Log
 import io.flutter.plugin.common.BasicMessageChannel
 import io.flutter.plugin.common.BinaryMessenger
+import io.flutter.plugin.common.EventChannel
 import io.flutter.plugin.common.MessageCodec
+import io.flutter.plugin.common.StandardMethodCodec
 import io.flutter.plugin.common.StandardMessageCodec
 import java.io.ByteArrayOutputStream
 import java.nio.ByteBuffer
-
 private object MessagesPigeonUtils {
 
   fun createConnectionError(channelName: String): FlutterError {
-    return FlutterError(
-        "channel-error", "Unable to establish connection on channel: '$channelName'.", "")
-  }
+    return FlutterError("channel-error",  "Unable to establish connection on channel: '$channelName'.", "")  }
 
   fun wrapResult(result: Any?): List<Any?> {
     return listOf(result)
@@ -28,15 +27,19 @@ private object MessagesPigeonUtils {
 
   fun wrapError(exception: Throwable): List<Any?> {
     return if (exception is FlutterError) {
-      listOf(exception.code, exception.message, exception.details)
+      listOf(
+        exception.code,
+        exception.message,
+        exception.details
+      )
     } else {
       listOf(
-          exception.javaClass.simpleName,
-          exception.toString(),
-          "Cause: " + exception.cause + ", Stacktrace: " + Log.getStackTraceString(exception))
+        exception.javaClass.simpleName,
+        exception.toString(),
+        "Cause: " + exception.cause + ", Stacktrace: " + Log.getStackTraceString(exception)
+      )
     }
   }
-
   fun doubleEquals(a: Double, b: Double): Boolean {
     // Normalize -0.0 to 0.0 and handle NaN equality.
     return (if (a == 0.0) 0.0 else a) == (if (b == 0.0) 0.0 else b) || (a.isNaN() && b.isNaN())
@@ -180,19 +183,19 @@ private object MessagesPigeonUtils {
       else -> value.hashCode()
     }
   }
+
 }
 
 /**
  * Error class for passing custom error details to Flutter via a thrown PlatformException.
- *
  * @property code The error code.
  * @property message The error message.
  * @property details The error details. Must be a datatype supported by the api codec.
  */
-class FlutterError(
-    val code: String,
-    override val message: String? = null,
-    val details: Any? = null
+class FlutterError (
+  val code: String,
+  override val message: String? = null,
+  val details: Any? = null
 ) : RuntimeException()
 
 /**
@@ -200,14 +203,15 @@ class FlutterError(
  *
  * Generated class from Pigeon that represents data sent in messages.
  */
-data class ShortcutItemMessage(
-    /** The identifier of this item; should be unique within the app. */
-    val type: String,
-    /** Localized title of the item. */
-    val localizedTitle: String,
-    /** Name of native resource to be displayed as the icon for this item. */
-    val icon: String? = null
-) {
+data class ShortcutItemMessage (
+  /** The identifier of this item; should be unique within the app. */
+  val type: String,
+  /** Localized title of the item. */
+  val localizedTitle: String,
+  /** Name of native resource to be displayed as the icon for this item. */
+  val icon: String? = null
+)
+ {
   companion object {
     fun fromList(pigeonVar_list: List<Any?>): ShortcutItemMessage {
       val type = pigeonVar_list[0] as String
@@ -216,15 +220,13 @@ data class ShortcutItemMessage(
       return ShortcutItemMessage(type, localizedTitle, icon)
     }
   }
-
   fun toList(): List<Any?> {
     return listOf(
-        type,
-        localizedTitle,
-        icon,
+      type,
+      localizedTitle,
+      icon,
     )
   }
-
   override fun equals(other: Any?): Boolean {
     if (other == null || other.javaClass != javaClass) {
       return false
@@ -233,9 +235,7 @@ data class ShortcutItemMessage(
       return true
     }
     val other = other as ShortcutItemMessage
-    return MessagesPigeonUtils.deepEquals(this.type, other.type) &&
-        MessagesPigeonUtils.deepEquals(this.localizedTitle, other.localizedTitle) &&
-        MessagesPigeonUtils.deepEquals(this.icon, other.icon)
+    return MessagesPigeonUtils.deepEquals(this.type, other.type) && MessagesPigeonUtils.deepEquals(this.localizedTitle, other.localizedTitle) && MessagesPigeonUtils.deepEquals(this.icon, other.icon)
   }
 
   override fun hashCode(): Int {
@@ -246,18 +246,18 @@ data class ShortcutItemMessage(
     return result
   }
 }
-
 private open class MessagesPigeonCodec : StandardMessageCodec() {
   override fun readValueOfType(type: Byte, buffer: ByteBuffer): Any? {
     return when (type) {
       129.toByte() -> {
-        return (readValue(buffer) as? List<Any?>)?.let { ShortcutItemMessage.fromList(it) }
+        return (readValue(buffer) as? List<Any?>)?.let {
+          ShortcutItemMessage.fromList(it)
+        }
       }
       else -> super.readValueOfType(type, buffer)
     }
   }
-
-  override fun writeValue(stream: ByteArrayOutputStream, value: Any?) {
+  override fun writeValue(stream: ByteArrayOutputStream, value: Any?)   {
     when (value) {
       is ShortcutItemMessage -> {
         stream.write(129)
@@ -268,6 +268,7 @@ private open class MessagesPigeonCodec : StandardMessageCodec() {
   }
 }
 
+
 /** Generated interface from Pigeon that represents a handler of messages from Flutter. */
 interface AndroidQuickActionsApi {
   /** Checks for, and returns the action that launched the app. */
@@ -276,36 +277,27 @@ interface AndroidQuickActionsApi {
   fun setShortcutItems(itemsList: List<ShortcutItemMessage>, callback: (Result<Unit>) -> Unit)
   /** Removes all dynamic shortcuts. */
   fun clearShortcutItems()
+  /** Tells the native side that the Dart receiver has been registered. */
+  fun registerReceiver()
 
   companion object {
     /** The codec used by AndroidQuickActionsApi. */
-    val codec: MessageCodec<Any?> by lazy { MessagesPigeonCodec() }
-    /**
-     * Sets up an instance of `AndroidQuickActionsApi` to handle messages through the
-     * `binaryMessenger`.
-     */
+    val codec: MessageCodec<Any?> by lazy {
+      MessagesPigeonCodec()
+    }
+    /** Sets up an instance of `AndroidQuickActionsApi` to handle messages through the `binaryMessenger`. */
     @JvmOverloads
-    fun setUp(
-        binaryMessenger: BinaryMessenger,
-        api: AndroidQuickActionsApi?,
-        messageChannelSuffix: String = ""
-    ) {
-      val separatedMessageChannelSuffix =
-          if (messageChannelSuffix.isNotEmpty()) ".$messageChannelSuffix" else ""
+    fun setUp(binaryMessenger: BinaryMessenger, api: AndroidQuickActionsApi?, messageChannelSuffix: String = "") {
+      val separatedMessageChannelSuffix = if (messageChannelSuffix.isNotEmpty()) ".$messageChannelSuffix" else ""
       run {
-        val channel =
-            BasicMessageChannel<Any?>(
-                binaryMessenger,
-                "dev.flutter.pigeon.quick_actions_android.AndroidQuickActionsApi.getLaunchAction$separatedMessageChannelSuffix",
-                codec)
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.quick_actions_android.AndroidQuickActionsApi.getLaunchAction$separatedMessageChannelSuffix", codec)
         if (api != null) {
           channel.setMessageHandler { _, reply ->
-            val wrapped: List<Any?> =
-                try {
-                  listOf(api.getLaunchAction())
-                } catch (exception: Throwable) {
-                  MessagesPigeonUtils.wrapError(exception)
-                }
+            val wrapped: List<Any?> = try {
+              listOf(api.getLaunchAction())
+            } catch (exception: Throwable) {
+              MessagesPigeonUtils.wrapError(exception)
+            }
             reply.reply(wrapped)
           }
         } else {
@@ -313,11 +305,7 @@ interface AndroidQuickActionsApi {
         }
       }
       run {
-        val channel =
-            BasicMessageChannel<Any?>(
-                binaryMessenger,
-                "dev.flutter.pigeon.quick_actions_android.AndroidQuickActionsApi.setShortcutItems$separatedMessageChannelSuffix",
-                codec)
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.quick_actions_android.AndroidQuickActionsApi.setShortcutItems$separatedMessageChannelSuffix", codec)
         if (api != null) {
           channel.setMessageHandler { message, reply ->
             val args = message as List<Any?>
@@ -336,20 +324,31 @@ interface AndroidQuickActionsApi {
         }
       }
       run {
-        val channel =
-            BasicMessageChannel<Any?>(
-                binaryMessenger,
-                "dev.flutter.pigeon.quick_actions_android.AndroidQuickActionsApi.clearShortcutItems$separatedMessageChannelSuffix",
-                codec)
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.quick_actions_android.AndroidQuickActionsApi.clearShortcutItems$separatedMessageChannelSuffix", codec)
         if (api != null) {
           channel.setMessageHandler { _, reply ->
-            val wrapped: List<Any?> =
-                try {
-                  api.clearShortcutItems()
-                  listOf(null)
-                } catch (exception: Throwable) {
-                  MessagesPigeonUtils.wrapError(exception)
-                }
+            val wrapped: List<Any?> = try {
+              api.clearShortcutItems()
+              listOf(null)
+            } catch (exception: Throwable) {
+              MessagesPigeonUtils.wrapError(exception)
+            }
+            reply.reply(wrapped)
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.quick_actions_android.AndroidQuickActionsApi.registerReceiver$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { _, reply ->
+            val wrapped: List<Any?> = try {
+              api.registerReceiver()
+              listOf(null)
+            } catch (exception: Throwable) {
+              MessagesPigeonUtils.wrapError(exception)
+            }
             reply.reply(wrapped)
           }
         } else {
@@ -360,20 +359,18 @@ interface AndroidQuickActionsApi {
   }
 }
 /** Generated class from Pigeon that represents Flutter messages that can be called from Kotlin. */
-class AndroidQuickActionsFlutterApi(
-    private val binaryMessenger: BinaryMessenger,
-    private val messageChannelSuffix: String = ""
-) {
+class AndroidQuickActionsFlutterApi(private val binaryMessenger: BinaryMessenger, private val messageChannelSuffix: String = "") {
   companion object {
     /** The codec used by AndroidQuickActionsFlutterApi. */
-    val codec: MessageCodec<Any?> by lazy { MessagesPigeonCodec() }
+    val codec: MessageCodec<Any?> by lazy {
+      MessagesPigeonCodec()
+    }
   }
   /** Sends a string representing a shortcut from the native platform to the app. */
-  fun launchAction(actionArg: String, callback: (Result<Unit>) -> Unit) {
-    val separatedMessageChannelSuffix =
-        if (messageChannelSuffix.isNotEmpty()) ".$messageChannelSuffix" else ""
-    val channelName =
-        "dev.flutter.pigeon.quick_actions_android.AndroidQuickActionsFlutterApi.launchAction$separatedMessageChannelSuffix"
+  fun launchAction(actionArg: String, callback: (Result<Unit>) -> Unit)
+{
+    val separatedMessageChannelSuffix = if (messageChannelSuffix.isNotEmpty()) ".$messageChannelSuffix" else ""
+    val channelName = "dev.flutter.pigeon.quick_actions_android.AndroidQuickActionsFlutterApi.launchAction$separatedMessageChannelSuffix"
     val channel = BasicMessageChannel<Any?>(binaryMessenger, channelName, codec)
     channel.send(listOf(actionArg)) {
       if (it is List<*>) {
@@ -384,7 +381,7 @@ class AndroidQuickActionsFlutterApi(
         }
       } else {
         callback(Result.failure(MessagesPigeonUtils.createConnectionError(channelName)))
-      }
+      } 
     }
   }
 }

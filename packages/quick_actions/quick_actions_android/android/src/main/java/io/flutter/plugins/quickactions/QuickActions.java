@@ -33,6 +33,8 @@ final class QuickActions implements AndroidQuickActionsApi {
   private final Context context;
   private Activity activity;
 
+  private boolean dartReceiverRegistered = false;
+
   QuickActions(Context context) {
     this.context = context;
   }
@@ -43,6 +45,15 @@ final class QuickActions implements AndroidQuickActionsApi {
 
   public Activity getActivity() {
     return this.activity;
+  }
+
+  public boolean isDartReceiverRegistered() {
+    return this.dartReceiverRegistered;
+  }
+
+  @Override
+  public void registerReceiver() {
+    this.dartReceiverRegistered = true;
   }
 
   // Returns true when running on a version of Android that supports quick actions.
@@ -98,14 +109,8 @@ final class QuickActions implements AndroidQuickActionsApi {
 
   @Override
   public @Nullable String getLaunchAction() {
-    if (!isVersionAllowed()) {
+    if (!isVersionAllowed() || activity == null) {
       return null;
-    }
-    if (activity == null) {
-      throw new FlutterError(
-          "quick_action_getlaunchaction_no_activity",
-          "There is no activity available when launching action",
-          null);
     }
     final Intent intent = activity.getIntent();
     final String launchAction = intent.getStringExtra(EXTRA_ACTION);

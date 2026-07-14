@@ -29,10 +29,16 @@ void main() {
   });
 
   group('#initialize', () {
-    test('passes getLaunchAction on launch method', () {
-      quickActions.initialize((String type) {});
+    test('passes getLaunchAction on launch method', () async {
+      await quickActions.initialize((String type) {});
 
       expect(api.getLaunchActionCalled, true);
+    });
+
+    test('calls registerReceiver', () async {
+      await quickActions.initialize((String type) {});
+
+      expect(api.registerReceiverCalled, true);
     });
 
     test('initialize', () async {
@@ -78,6 +84,7 @@ void main() {
 class _FakeQuickActionsApi implements AndroidQuickActionsApi {
   List<ShortcutItem> items = <ShortcutItem>[];
   bool getLaunchActionCalled = false;
+  bool registerReceiverCalled = false;
 
   @override
   Future<void> clearShortcutItems() async {
@@ -97,6 +104,11 @@ class _FakeQuickActionsApi implements AndroidQuickActionsApi {
     for (final element in itemsList) {
       items.add(shortcutItemMessageToShortcutItem(element!));
     }
+  }
+
+  @override
+  Future<void> registerReceiver() async {
+    registerReceiverCalled = true;
   }
 
   @override

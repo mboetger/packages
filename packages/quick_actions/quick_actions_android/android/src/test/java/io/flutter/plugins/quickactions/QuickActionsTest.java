@@ -61,13 +61,19 @@ public class QuickActionsTest {
   }
 
   @Test
-  public void onAttachedToActivity_buildVersionSupported_invokesLaunchMethod()
+  public void onAttachedToActivity_buildVersionSupported_invokesLaunchMethod_whenRegistered()
       throws NoSuchFieldException, IllegalAccessException {
     // Arrange
     final TestBinaryMessenger testBinaryMessenger = new TestBinaryMessenger();
     final QuickActionsPlugin plugin =
         new QuickActionsPlugin((version) -> SUPPORTED_BUILD >= version);
     setUpMessengerAndFlutterPluginBinding(testBinaryMessenger, plugin);
+
+    java.lang.reflect.Field quickActionsField = QuickActionsPlugin.class.getDeclaredField("quickActions");
+    quickActionsField.setAccessible(true);
+    QuickActions quickActions = (QuickActions) quickActionsField.get(plugin);
+    quickActions.registerReceiver();
+
     final Intent mockIntent = createMockIntentWithQuickActionExtra();
     final Activity mockMainActivity = mock(Activity.class);
     when(mockMainActivity.getIntent()).thenReturn(mockIntent);
@@ -75,13 +81,36 @@ public class QuickActionsTest {
     when(mockActivityPluginBinding.getActivity()).thenReturn(mockMainActivity);
     final Context mockContext = mock(Context.class);
     when(mockMainActivity.getApplicationContext()).thenReturn(mockContext);
-    plugin.onAttachedToActivity(mockActivityPluginBinding);
 
     // Act
     plugin.onAttachedToActivity(mockActivityPluginBinding);
 
     // Assert
     assertTrue(testBinaryMessenger.launchActionCalled);
+  }
+
+  @Test
+  public void onAttachedToActivity_buildVersionSupported_doesNotInvokeLaunchMethod_whenNotRegistered()
+      throws NoSuchFieldException, IllegalAccessException {
+    // Arrange
+    final TestBinaryMessenger testBinaryMessenger = new TestBinaryMessenger();
+    final QuickActionsPlugin plugin =
+        new QuickActionsPlugin((version) -> SUPPORTED_BUILD >= version);
+    setUpMessengerAndFlutterPluginBinding(testBinaryMessenger, plugin);
+
+    final Intent mockIntent = createMockIntentWithQuickActionExtra();
+    final Activity mockMainActivity = mock(Activity.class);
+    when(mockMainActivity.getIntent()).thenReturn(mockIntent);
+    final ActivityPluginBinding mockActivityPluginBinding = mock(ActivityPluginBinding.class);
+    when(mockActivityPluginBinding.getActivity()).thenReturn(mockMainActivity);
+    final Context mockContext = mock(Context.class);
+    when(mockMainActivity.getApplicationContext()).thenReturn(mockContext);
+
+    // Act
+    plugin.onAttachedToActivity(mockActivityPluginBinding);
+
+    // Assert
+    assertFalse(testBinaryMessenger.launchActionCalled);
   }
 
   @Test
@@ -102,12 +131,19 @@ public class QuickActionsTest {
   }
 
   @Test
-  public void onNewIntent_buildVersionSupported_invokesLaunchMethod() {
+  public void onNewIntent_buildVersionSupported_invokesLaunchMethod_whenRegistered()
+      throws NoSuchFieldException, IllegalAccessException {
     // Arrange
     final TestBinaryMessenger testBinaryMessenger = new TestBinaryMessenger();
     final QuickActionsPlugin plugin =
         new QuickActionsPlugin((version) -> SUPPORTED_BUILD >= version);
     setUpMessengerAndFlutterPluginBinding(testBinaryMessenger, plugin);
+
+    java.lang.reflect.Field quickActionsField = QuickActionsPlugin.class.getDeclaredField("quickActions");
+    quickActionsField.setAccessible(true);
+    QuickActions quickActions = (QuickActions) quickActionsField.get(plugin);
+    quickActions.registerReceiver();
+
     final Intent mockIntent = createMockIntentWithQuickActionExtra();
     final Activity mockMainActivity = mock(Activity.class);
     when(mockMainActivity.getIntent()).thenReturn(mockIntent);
@@ -122,6 +158,32 @@ public class QuickActionsTest {
 
     // Assert
     assertTrue(testBinaryMessenger.launchActionCalled);
+    assertFalse(onNewIntentReturn);
+  }
+
+  @Test
+  public void onNewIntent_buildVersionSupported_doesNotInvokeLaunchMethod_whenNotRegistered()
+      throws NoSuchFieldException, IllegalAccessException {
+    // Arrange
+    final TestBinaryMessenger testBinaryMessenger = new TestBinaryMessenger();
+    final QuickActionsPlugin plugin =
+        new QuickActionsPlugin((version) -> SUPPORTED_BUILD >= version);
+    setUpMessengerAndFlutterPluginBinding(testBinaryMessenger, plugin);
+
+    final Intent mockIntent = createMockIntentWithQuickActionExtra();
+    final Activity mockMainActivity = mock(Activity.class);
+    when(mockMainActivity.getIntent()).thenReturn(mockIntent);
+    final ActivityPluginBinding mockActivityPluginBinding = mock(ActivityPluginBinding.class);
+    when(mockActivityPluginBinding.getActivity()).thenReturn(mockMainActivity);
+    final Context mockContext = mock(Context.class);
+    when(mockMainActivity.getApplicationContext()).thenReturn(mockContext);
+    plugin.onAttachedToActivity(mockActivityPluginBinding);
+
+    // Act
+    final boolean onNewIntentReturn = plugin.onNewIntent(mockIntent);
+
+    // Assert
+    assertFalse(testBinaryMessenger.launchActionCalled);
     assertFalse(onNewIntentReturn);
   }
 

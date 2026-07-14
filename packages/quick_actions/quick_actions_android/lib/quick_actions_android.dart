@@ -29,6 +29,7 @@ class QuickActionsAndroid extends QuickActionsPlatform {
     final quickActionsHandlerApi = _QuickActionHandlerApi();
     AndroidQuickActionsFlutterApi.setUp(quickActionsHandlerApi);
     _handler = handler;
+    await _hostApi.registerReceiver();
     final String? action = await _hostApi.getLaunchAction();
     if (action != null) {
       _handler(action);

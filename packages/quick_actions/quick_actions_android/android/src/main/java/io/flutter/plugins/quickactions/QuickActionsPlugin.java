@@ -98,17 +98,20 @@ public class QuickActionsPlugin implements FlutterPlugin, ActivityAware, NewInte
       Context context = activity.getApplicationContext();
       String shortcutId = intent.getStringExtra(QuickActions.EXTRA_ACTION);
       if (shortcutId != null) {
-        quickActionsFlutterApi.launchAction(
-            shortcutId,
-            ResultCompat.asCompatCallback(
-                result -> {
-                  Throwable error = result.exceptionOrNull();
-                  if (error != null) {
-                    Log.e(TAG, "Failed to handle launch action: " + error.getMessage());
-                  }
-                  return Unit.INSTANCE;
-                }));
-        ShortcutManagerCompat.reportShortcutUsed(context, shortcutId);
+        if (quickActions.isDartReceiverRegistered()) {
+          quickActionsFlutterApi.launchAction(
+              shortcutId,
+              ResultCompat.asCompatCallback(
+                  result -> {
+                    Throwable error = result.exceptionOrNull();
+                    if (error != null) {
+                      Log.e(TAG, "Failed to handle launch action: " + error.getMessage());
+                    }
+                    return Unit.INSTANCE;
+                  }));
+          ShortcutManagerCompat.reportShortcutUsed(context, shortcutId);
+          intent.removeExtra(QuickActions.EXTRA_ACTION);
+        }
       }
     }
     return false;
