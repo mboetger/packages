@@ -163,22 +163,42 @@ class SharedPreferences {
   Future<bool> setStringList(String key, List<String> value) => _setValue('StringList', key, value);
 
   /// Removes an entry from persistent storage.
-  Future<bool> remove(String key) {
+  Future<bool> remove(String key) async {
     final prefixedKey = '$_prefix$key';
+    final Object? previousValue = _preferenceCache[key];
     _preferenceCache.remove(key);
-    return _store.remove(prefixedKey);
+    try {
+      final bool success = await _store.remove(prefixedKey);
+      if (!success) {
+        _rollbackCache(key, previousValue);
+      }
+      return success;
+    } catch (e) {
+      _rollbackCache(key, previousValue);
+      rethrow;
+    }
   }
 
-  Future<bool> _setValue(String valueType, String key, Object value) {
+  Future<bool> _setValue(String valueType, String key, Object value) async {
     ArgumentError.checkNotNull(value, 'value');
     final prefixedKey = '$_prefix$key';
+    final Object? previousValue = _preferenceCache[key];
     if (value is List<String>) {
       // Make a copy of the list so that later mutations won't propagate
       _preferenceCache[key] = value.toList();
     } else {
       _preferenceCache[key] = value;
     }
-    return _store.setValue(valueType, prefixedKey, value);
+    try {
+      final bool success = await _store.setValue(valueType, prefixedKey, value);
+      if (!success) {
+        _rollbackCache(key, previousValue);
+      }
+      return success;
+    } catch (e) {
+      _rollbackCache(key, previousValue);
+      rethrow;
+    }
   }
 
   /// Always returns true.
@@ -187,28 +207,43 @@ class SharedPreferences {
   Future<bool> commit() async => true;
 
   /// Completes with true once the user preferences for the app has been cleared.
-  Future<bool> clear() {
+  Future<bool> clear() async {
+    final previousCache = Map<String, Object>.from(_preferenceCache);
     _preferenceCache.clear();
-    if (_prefixHasBeenChanged) {
-      try {
-        return _store.clearWithParameters(
-          ClearParameters(
-            filter: PreferencesFilter(prefix: _prefix, allowList: _allowList),
-          ),
-        );
-      } catch (e) {
-        // Catching and clarifying UnimplementedError to provide a more robust message.
-        if (e is UnimplementedError) {
-          throw UnimplementedError('''
+
+    Future<bool> doClear() {
+      if (_prefixHasBeenChanged) {
+        try {
+          return _store.clearWithParameters(
+            ClearParameters(
+              filter: PreferencesFilter(prefix: _prefix, allowList: _allowList),
+            ),
+          );
+        } catch (e) {
+          // Catching and clarifying UnimplementedError to provide a more robust message.
+          if (e is UnimplementedError) {
+            throw UnimplementedError('''
 This implementation of Shared Preferences doesn't yet support the setPrefix method.
 Either update the implementation to support setPrefix, or do not call setPrefix.
         ''');
-        } else {
-          rethrow;
+          } else {
+            rethrow;
+          }
         }
       }
+      return _store.clear();
     }
-    return _store.clear();
+
+    try {
+      final bool success = await doClear();
+      if (!success) {
+        _preferenceCache.addAll(previousCache);
+      }
+      return success;
+    } catch (e) {
+      _preferenceCache.addAll(previousCache);
+      rethrow;
+    }
   }
 
   /// Fetches the latest values from the host platform.
@@ -219,6 +254,14 @@ Either update the implementation to support setPrefix, or do not call setPrefix.
     final Map<String, Object> preferences = await SharedPreferences._getSharedPreferencesMap();
     _preferenceCache.clear();
     _preferenceCache.addAll(preferences);
+  }
+
+  void _rollbackCache(String key, Object? previousValue) {
+    if (previousValue == null) {
+      _preferenceCache.remove(key);
+    } else {
+      _preferenceCache[key] = previousValue;
+    }
   }
 
   static Future<Map<String, Object>> _getSharedPreferencesMap() async {

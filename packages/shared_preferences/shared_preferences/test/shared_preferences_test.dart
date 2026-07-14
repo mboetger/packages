@@ -295,6 +295,89 @@ void main() {
     expect(err, isA<StateError>());
     expect(err.toString(), contains('State Error'));
   });
+
+  group('Failing writes rollback cache', () {
+    test('setValue failure reverts cache (returns false)', () async {
+      final store = FailingSharedPreferencesStore(<String, Object>{'flutter.String': 'initial'});
+      SharedPreferencesStorePlatform.instance = store;
+      SharedPreferences.resetStatic();
+      final SharedPreferences prefs = await SharedPreferences.getInstance();
+
+      expect(prefs.getString('String'), 'initial');
+
+      final bool success = await prefs.setString('String', 'new');
+      expect(success, false);
+      expect(prefs.getString('String'), 'initial');
+    });
+
+    test('setValue failure reverts cache (throws)', () async {
+      final store = ThrowingWriteSharedPreferencesStore(<String, Object>{
+        'flutter.String': 'initial',
+      });
+      SharedPreferencesStorePlatform.instance = store;
+      SharedPreferences.resetStatic();
+      final SharedPreferences prefs = await SharedPreferences.getInstance();
+
+      expect(prefs.getString('String'), 'initial');
+
+      await expectLater(() => prefs.setString('String', 'new'), throwsA(isA<PlatformException>()));
+      expect(prefs.getString('String'), 'initial');
+    });
+
+    test('remove failure reverts cache (returns false)', () async {
+      final store = FailingSharedPreferencesStore(<String, Object>{'flutter.String': 'initial'});
+      SharedPreferencesStorePlatform.instance = store;
+      SharedPreferences.resetStatic();
+      final SharedPreferences prefs = await SharedPreferences.getInstance();
+
+      expect(prefs.getString('String'), 'initial');
+
+      final bool success = await prefs.remove('String');
+      expect(success, false);
+      expect(prefs.getString('String'), 'initial');
+    });
+
+    test('remove failure reverts cache (throws)', () async {
+      final store = ThrowingWriteSharedPreferencesStore(<String, Object>{
+        'flutter.String': 'initial',
+      });
+      SharedPreferencesStorePlatform.instance = store;
+      SharedPreferences.resetStatic();
+      final SharedPreferences prefs = await SharedPreferences.getInstance();
+
+      expect(prefs.getString('String'), 'initial');
+
+      await expectLater(() => prefs.remove('String'), throwsA(isA<PlatformException>()));
+      expect(prefs.getString('String'), 'initial');
+    });
+
+    test('clear failure reverts cache (returns false)', () async {
+      final store = FailingSharedPreferencesStore(<String, Object>{'flutter.String': 'initial'});
+      SharedPreferencesStorePlatform.instance = store;
+      SharedPreferences.resetStatic();
+      final SharedPreferences prefs = await SharedPreferences.getInstance();
+
+      expect(prefs.getString('String'), 'initial');
+
+      final bool success = await prefs.clear();
+      expect(success, false);
+      expect(prefs.getString('String'), 'initial');
+    });
+
+    test('clear failure reverts cache (throws)', () async {
+      final store = ThrowingWriteSharedPreferencesStore(<String, Object>{
+        'flutter.String': 'initial',
+      });
+      SharedPreferencesStorePlatform.instance = store;
+      SharedPreferences.resetStatic();
+      final SharedPreferences prefs = await SharedPreferences.getInstance();
+
+      expect(prefs.getString('String'), 'initial');
+
+      await expectLater(() => prefs.clear(), throwsA(isA<PlatformException>()));
+      expect(prefs.getString('String'), 'initial');
+    });
+  });
 }
 
 class FakeSharedPreferencesStore extends SharedPreferencesStorePlatform {
@@ -395,5 +478,57 @@ class ThrowingSharedPreferencesStore extends SharedPreferencesStorePlatform {
   @override
   Future<Map<String, Object>> getAllWithParameters(GetAllParameters parameters) {
     throw StateError('State Error');
+  }
+}
+
+class FailingSharedPreferencesStore extends SharedPreferencesStorePlatform {
+  FailingSharedPreferencesStore(this.data);
+
+  final Map<String, Object> data;
+
+  @override
+  Future<bool> clear() async {
+    return false;
+  }
+
+  @override
+  Future<Map<String, Object>> getAll() async {
+    return data;
+  }
+
+  @override
+  Future<bool> remove(String key) async {
+    return false;
+  }
+
+  @override
+  Future<bool> setValue(String valueType, String key, Object value) async {
+    return false;
+  }
+}
+
+class ThrowingWriteSharedPreferencesStore extends SharedPreferencesStorePlatform {
+  ThrowingWriteSharedPreferencesStore(this.data);
+
+  final Map<String, Object> data;
+
+  @override
+  Future<bool> clear() {
+    throw PlatformException(code: 'Failed to clear');
+  }
+
+  @override
+  Future<Map<String, Object>> getAll() async {
+    return data;
+  }
+
+  @override
+  Future<bool> remove(String key) {
+    throw PlatformException(code: 'Failed to remove');
+  }
+
+  @override
+  Future<bool> setValue(String valueType, String key, Object value) {
+    throw PlatformException(code: 'Failed to set');
   }
 }
