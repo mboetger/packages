@@ -226,4 +226,14 @@ public class ImageResizerTest {
     assertThat(width, equalTo(12.0F));
     assertThat(height, equalTo(7.0F));
   }
+
+  @Test
+  public void onResizeImageIfNeeded_whenImageIsHEIC_shouldConvertAndReturnScaledJpgFile() throws IOException {
+    File heicFile = new File(externalDirectory, "tempImage.heic");
+    java.nio.file.Files.copy(imageFile.toPath(), heicFile.toPath());
+
+    String outputFile =
+        resizer.resizeImageIfNeeded(heicFile.getPath(), null, null, /* imageQuality */ 100);
+    assertThat(outputFile, equalTo(externalDirectory.getPath() + "/scaled_tempImage.jpg"));
+  }
 }

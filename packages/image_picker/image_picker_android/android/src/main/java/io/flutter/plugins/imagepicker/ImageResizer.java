@@ -39,13 +39,19 @@ class ImageResizer {
     if (originalSize.getWidth() == -1 || originalSize.getHeight() == -1) {
       return imagePath;
     }
-    boolean shouldScale = maxWidth != null || maxHeight != null || imageQuality < 100;
+    boolean isHeif = imagePath.toLowerCase().endsWith(".heic") || imagePath.toLowerCase().endsWith(".heif");
+    boolean shouldScale = maxWidth != null || maxHeight != null || imageQuality < 100 || isHeif;
     if (!shouldScale) {
       return imagePath;
     }
     try {
       String[] pathParts = imagePath.split("/");
       String imageName = pathParts[pathParts.length - 1];
+      if (imageName.toLowerCase().endsWith(".heic")) {
+        imageName = imageName.substring(0, imageName.length() - 5) + ".jpg";
+      } else if (imageName.toLowerCase().endsWith(".heif")) {
+        imageName = imageName.substring(0, imageName.length() - 5) + ".jpg";
+      }
       SizeFCompat targetSize =
           calculateTargetSize(
               (double) originalSize.getWidth(),

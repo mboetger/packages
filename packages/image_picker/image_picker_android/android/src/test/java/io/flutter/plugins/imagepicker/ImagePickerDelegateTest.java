@@ -550,6 +550,44 @@ public class ImagePickerDelegateTest {
 
   @Test
   public void
+      onActivityResult_whenHEICImagePickedFromGallery_isConvertedToJpg() {
+    Mockito.doAnswer(
+            invocation -> {
+              ((Runnable) invocation.getArgument(0)).run();
+              return null;
+            })
+        .when(mockExecutor)
+        .execute(any(Runnable.class));
+    final Boolean[] callbackCalled = new Boolean[1];
+    ImagePickerDelegate delegate =
+        createDelegateWithPendingCallbackAndOptions(
+            ResultCompat.asCompatCallback(
+                reply -> {
+                  callbackCalled[0] = true;
+                  assertTrue(reply.isSuccess());
+                  String returnedPath = reply.getOrNull().get(0);
+                  assertTrue("Expected path to end with .jpg or .jpeg, but was: " + returnedPath,
+                      returnedPath.endsWith(".jpg") || returnedPath.endsWith(".jpeg"));
+                  return null;
+                }),
+            DEFAULT_IMAGE_OPTIONS,
+            null);
+
+    when(mockFileUtils.getPathFromUri(any(Context.class), any(Uri.class)))
+        .thenReturn("pathFromUri.heic");
+
+    when(mockImageResizer.resizeImageIfNeeded("pathFromUri.heic", null, null, 100))
+        .thenReturn("pathFromUri.jpg");
+
+    delegate.onActivityResult(
+        ImagePickerDelegate.REQUEST_CODE_CHOOSE_IMAGE_FROM_GALLERY, Activity.RESULT_OK, mockIntent);
+
+    assertTrue(callbackCalled[0]);
+  }
+
+
+  @Test
+  public void
       onActivityResult_whenImagePickedFromGallery_nullUriFromGetData_andNoResizeNeeded_finishesWithImagePath() {
     setupMockClipData();
 
