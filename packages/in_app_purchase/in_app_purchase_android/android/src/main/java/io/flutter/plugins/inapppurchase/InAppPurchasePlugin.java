@@ -5,6 +5,7 @@
 package io.flutter.plugins.inapppurchase;
 
 import android.content.Context;
+import android.content.Intent;
 import androidx.annotation.NonNull;
 import androidx.annotation.VisibleForTesting;
 import com.android.billingclient.api.BillingClient;
@@ -37,7 +38,12 @@ public class InAppPurchasePlugin implements FlutterPlugin, ActivityAware {
 
   @Override
   public void onAttachedToActivity(@NonNull ActivityPluginBinding binding) {
-    binding.getActivity().getIntent().putExtra(PROXY_PACKAGE_KEY, PROXY_VALUE);
+    Intent intent = binding.getActivity().getIntent();
+    if (intent == null) {
+      intent = new Intent();
+      binding.getActivity().setIntent(intent);
+    }
+    intent.putExtra(PROXY_PACKAGE_KEY, PROXY_VALUE);
     methodCallHandler.setActivity(binding.getActivity());
   }
 

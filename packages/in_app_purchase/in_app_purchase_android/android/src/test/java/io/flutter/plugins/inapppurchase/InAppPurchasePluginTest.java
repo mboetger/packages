@@ -67,6 +67,15 @@ public class InAppPurchasePluginTest {
     Mockito.verify(mockIntent).putExtra(PROXY_PACKAGE_KEY, "io.flutter.plugins.inapppurchase");
     assertEquals("io.flutter.plugins.inapppurchase", BuildConfig.LIBRARY_PACKAGE_NAME);
   }
+
+  @Test
+  public void attachToActivity_nullIntentThrowsNullPointerException() {
+    InAppPurchasePlugin plugin = new InAppPurchasePlugin();
+    plugin.onAttachedToEngine(flutterPluginBinding);
+    when(activity.getIntent()).thenReturn(null);
+    plugin.onAttachedToActivity(activityPluginBinding);
+    Mockito.verify(activity).setIntent(Mockito.any(Intent.class));
+  }
 }
 // We cannot use `BuildConfig.LIBRARY_PACKAGE_NAME` directly in the plugin code because whether to
 // read BuildConfig.APPLICATION_ID or LIBRARY_PACKAGE_NAME
