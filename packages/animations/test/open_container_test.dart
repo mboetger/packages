@@ -1259,6 +1259,58 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets(
+      'OpenContainer does not disappear when route is replaced during transition',
+      (WidgetTester tester) async {
+    await tester.pumpWidget(_boilerplate(
+      child: Center(
+        child: OpenContainer(
+          closedBuilder: (BuildContext context, VoidCallback action) {
+            return const Text('Closed');
+          },
+          openBuilder: (BuildContext context, VoidCallback action) {
+            return const Text('Open');
+          },
+        ),
+      ),
+    ));
+
+    expect(find.text('Closed'), findsOneWidget);
+
+    // Tap to open
+    await tester.tap(find.text('Closed'));
+    await tester.pump(); // starts transition
+    await tester.pump(const Duration(milliseconds: 100)); // partially transitioned
+
+    // Verify 'Open' is in the tree
+    expect(find.text('Open'), findsOneWidget);
+
+    // Replace the route
+    final BuildContext openRouteContext = tester.element(find.text('Open'));
+    Navigator.of(openRouteContext).pushReplacement(
+      PageRouteBuilder<void>(
+        pageBuilder: (BuildContext context, Animation<double> animation, Animation<double> secondaryAnimation) {
+          return const Scaffold(body: Text('Replacement Route'));
+        },
+        transitionDuration: Duration.zero,
+        reverseTransitionDuration: Duration.zero,
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Replacement Route'), findsOneWidget);
+    expect(find.text('Closed'), findsNothing);
+
+    // Pop the replacement route to go back
+    final NavigatorState navigator = tester.state(find.byType(Navigator));
+    navigator.pop();
+    await tester.pumpAndSettle();
+
+    // We should be back at 'Closed' and it should be visible!
+    expect(find.text('Closed'), findsOneWidget);
+  });
+
+
   testWidgets('can specify a duration', (WidgetTester tester) async {
     await tester.pumpWidget(
       Center(
