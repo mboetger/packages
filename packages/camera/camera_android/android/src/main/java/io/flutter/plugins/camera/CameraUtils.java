@@ -7,6 +7,7 @@ package io.flutter.plugins.camera;
 import android.app.Activity;
 import android.content.Context;
 import android.graphics.ImageFormat;
+import android.util.SizeF;
 import android.hardware.camera2.CameraAccessException;
 import android.hardware.camera2.CameraCharacteristics;
 import android.hardware.camera2.CameraManager;
@@ -57,6 +58,38 @@ public final class CameraUtils {
   }
 
   /**
+   * Gets the lens type from CameraCharacteristics.
+   *
+   * @param characteristics The CameraCharacteristics of the camera.
+   * @return The PlatformCameraLensType.
+   */
+  static Messages.PlatformCameraLensType getLensType(CameraCharacteristics characteristics) {
+    float[] focalLengths =
+        characteristics.get(CameraCharacteristics.LENS_INFO_AVAILABLE_FOCAL_LENGTHS);
+    SizeF sensorSize = characteristics.get(CameraCharacteristics.SENSOR_INFO_PHYSICAL_SIZE);
+    if (focalLengths == null || focalLengths.length == 0 || sensorSize == null) {
+      return Messages.PlatformCameraLensType.UNKNOWN;
+    }
+    float focalLength = focalLengths[0];
+    float width = sensorSize.getWidth();
+    float height = sensorSize.getHeight();
+    float sensorDiagonal = (float) Math.sqrt(width * width + height * height);
+    if (sensorDiagonal == 0.0f) {
+      return Messages.PlatformCameraLensType.UNKNOWN;
+    }
+    float cropFactor = 43.27f / sensorDiagonal;
+    float equivalentFocalLength = focalLength * cropFactor;
+    if (equivalentFocalLength < 24.0f) {
+      return Messages.PlatformCameraLensType.ULTRA_WIDE;
+    } else if (equivalentFocalLength < 50.0f) {
+      return Messages.PlatformCameraLensType.WIDE;
+    } else {
+      return Messages.PlatformCameraLensType.TELEPHOTO;
+    }
+  }
+
+
+  /**
    * Gets all the available cameras for the device.
    *
    * @param activity The current Android activity.
@@ -85,11 +118,13 @@ public final class CameraUtils {
 
       int lensFacing = characteristics.get(CameraCharacteristics.LENS_FACING);
       Messages.PlatformCameraLensDirection lensDirection = lensDirectionFromInteger(lensFacing);
+      Messages.PlatformCameraLensType lensType = getLensType(characteristics);
       Messages.PlatformCameraDescription details =
           new Messages.PlatformCameraDescription.Builder()
               .setName(cameraName)
               .setSensorOrientation((long) sensorOrientation)
               .setLensDirection(lensDirection)
+              .setLensType(lensType)
               .build();
       cameras.add(details);
     }

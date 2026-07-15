@@ -70,6 +70,7 @@ class AndroidCamera extends CameraPlatform {
           name: cameraDescription.name,
           lensDirection: cameraLensDirectionFromPlatform(cameraDescription.lensDirection),
           sensorOrientation: cameraDescription.sensorOrientation,
+          lensType: cameraLensTypeFromPlatform(cameraDescription.lensType),
         );
       }).toList();
     } on PlatformException catch (e) {

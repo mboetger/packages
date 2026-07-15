@@ -14,17 +14,22 @@ import 'package:pigeon/pigeon.dart';
 /// Pigeon equivalent of [CameraLensDirection].
 enum PlatformCameraLensDirection { front, back, external }
 
+/// Pigeon equivalent of [CameraLensType].
+enum PlatformCameraLensType { wide, telephoto, ultraWide, unknown }
+
 /// Pigeon equivalent of [CameraDescription].
 class PlatformCameraDescription {
   PlatformCameraDescription({
     required this.name,
     required this.lensDirection,
     required this.sensorOrientation,
+    required this.lensType,
   });
 
   final String name;
   final PlatformCameraLensDirection lensDirection;
   final int sensorOrientation;
+  final PlatformCameraLensType lensType;
 }
 
 /// Pigeon equivalent of [DeviceOrientation].

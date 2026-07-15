@@ -150,3 +150,13 @@ PlatformFlashMode flashModeToPlatform(FlashMode mode) {
 /// Null becomes null.
 PlatformPoint? pointToPlatform(Point<double>? point) =>
     (point != null) ? PlatformPoint(x: point.x, y: point.y) : null;
+
+/// Converts a [PlatformCameraLensType] to [CameraLensType].
+CameraLensType cameraLensTypeFromPlatform(PlatformCameraLensType type) =>
+    switch (type) {
+      PlatformCameraLensType.wide => CameraLensType.wide,
+      PlatformCameraLensType.telephoto => CameraLensType.telephoto,
+      PlatformCameraLensType.ultraWide => CameraLensType.ultraWide,
+      PlatformCameraLensType.unknown => CameraLensType.unknown,
+    };
+

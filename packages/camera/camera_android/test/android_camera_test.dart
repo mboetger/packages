@@ -407,11 +407,13 @@ void main() {
           name: 'Test 1',
           lensDirection: PlatformCameraLensDirection.front,
           sensorOrientation: 1,
+          lensType: PlatformCameraLensType.wide,
         ),
         PlatformCameraDescription(
           name: 'Test 2',
           lensDirection: PlatformCameraLensDirection.back,
           sensorOrientation: 2,
+          lensType: PlatformCameraLensType.ultraWide,
         ),
       ];
       when(mockCameraApi.getAvailableCameras()).thenAnswer((_) async => returnData);
@@ -421,15 +423,15 @@ void main() {
 
       // Assert
       expect(cameras.length, returnData.length);
-      for (var i = 0; i < returnData.length; i++) {
-        final PlatformCameraDescription platformCameraDescription = returnData[i];
-        final cameraDescription = CameraDescription(
-          name: platformCameraDescription.name,
-          lensDirection: cameraLensDirectionFromPlatform(platformCameraDescription.lensDirection),
-          sensorOrientation: platformCameraDescription.sensorOrientation,
-        );
-        expect(cameras[i], cameraDescription);
-      }
+      expect(cameras[0].name, 'Test 1');
+      expect(cameras[0].lensDirection, CameraLensDirection.front);
+      expect(cameras[0].sensorOrientation, 1);
+      expect(cameras[0].lensType, CameraLensType.wide);
+
+      expect(cameras[1].name, 'Test 2');
+      expect(cameras[1].lensDirection, CameraLensDirection.back);
+      expect(cameras[1].sensorOrientation, 2);
+      expect(cameras[1].lensType, CameraLensType.ultraWide);
     });
 
     test('Should throw CameraException when availableCameras throws a PlatformException', () {

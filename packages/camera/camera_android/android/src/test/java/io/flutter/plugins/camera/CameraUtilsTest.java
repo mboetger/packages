@@ -7,12 +7,15 @@ package io.flutter.plugins.camera;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.anyString;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import android.app.Activity;
 import android.content.Context;
 import android.graphics.ImageFormat;
+import android.util.SizeF;
 import android.hardware.camera2.CameraAccessException;
 import android.hardware.camera2.CameraCharacteristics;
 import android.hardware.camera2.CameraManager;
@@ -24,8 +27,33 @@ import io.flutter.plugins.camera.features.flash.FlashMode;
 import io.flutter.plugins.camera.features.resolution.ResolutionPreset;
 import java.util.List;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.robolectric.RobolectricTestRunner;
 
+@RunWith(RobolectricTestRunner.class)
 public class CameraUtilsTest {
+
+  private CameraCharacteristics mockCharacteristicsForAvailableCameras(
+      Integer sensorOrientation,
+      Integer lensFacing,
+      float[] focalLengths,
+      SizeF sensorSize) {
+    CameraCharacteristics mockCharacteristics = mock(CameraCharacteristics.class);
+    when(mockCharacteristics.get(CameraCharacteristics.SENSOR_ORIENTATION)).thenReturn(sensorOrientation);
+    when(mockCharacteristics.get(CameraCharacteristics.LENS_FACING)).thenReturn(lensFacing);
+    when(mockCharacteristics.get(CameraCharacteristics.LENS_INFO_AVAILABLE_FOCAL_LENGTHS)).thenReturn(focalLengths);
+    when(mockCharacteristics.get(CameraCharacteristics.SENSOR_INFO_PHYSICAL_SIZE)).thenReturn(sensorSize);
+    return mockCharacteristics;
+  }
+
+  private CameraCharacteristics mockCharacteristicsForLensType(
+      float[] focalLengths,
+      SizeF sensorSize) {
+    CameraCharacteristics mockCharacteristics = mock(CameraCharacteristics.class);
+    when(mockCharacteristics.get(CameraCharacteristics.LENS_INFO_AVAILABLE_FOCAL_LENGTHS)).thenReturn(focalLengths);
+    when(mockCharacteristics.get(CameraCharacteristics.SENSOR_INFO_PHYSICAL_SIZE)).thenReturn(sensorSize);
+    return mockCharacteristics;
+  }
 
   @Test
   public void getAvailableCameras_retrievesValidCameras()
@@ -41,13 +69,23 @@ public class CameraUtilsTest {
 
     when(mockActivity.getSystemService(Context.CAMERA_SERVICE)).thenReturn(mockCameraManager);
     when(mockCameraManager.getCameraIdList()).thenReturn(mockCameraIds);
-    when(mockCameraManager.getCameraCharacteristics(anyString()))
-        .thenReturn(mockCameraCharacteristics);
-    when(mockCameraCharacteristics.get(any()))
-        .thenReturn(mockSensorOrientation0)
-        .thenReturn(mockLensFacing0)
-        .thenReturn(mockSensorOrientation2)
-        .thenReturn(mockLensFacing2);
+    
+    CameraCharacteristics mockCharacteristics0 = mockCharacteristicsForAvailableCameras(
+        mockSensorOrientation0,
+        mockLensFacing0,
+        new float[]{4.5f},
+        new SizeF(4.8f, 3.6f)
+    );
+    
+    CameraCharacteristics mockCharacteristics2 = mockCharacteristicsForAvailableCameras(
+        mockSensorOrientation2,
+        mockLensFacing2,
+        null,
+        null
+    );
+
+    when(mockCameraManager.getCameraCharacteristics("1394902")).thenReturn(mockCharacteristics0);
+    when(mockCameraManager.getCameraCharacteristics("0283835")).thenReturn(mockCharacteristics2);
 
     List<Messages.PlatformCameraDescription> availableCameras =
         CameraUtils.getAvailableCameras(mockActivity);
@@ -57,10 +95,15 @@ public class CameraUtilsTest {
     assertEquals(availableCameras.get(0).getSensorOrientation().intValue(), mockSensorOrientation0);
     assertEquals(
         availableCameras.get(0).getLensDirection(), Messages.PlatformCameraLensDirection.FRONT);
+    assertEquals(
+        availableCameras.get(0).getLensType(), Messages.PlatformCameraLensType.WIDE); // Assert lensType
+
     assertEquals(availableCameras.get(1).getName(), "0283835");
     assertEquals(availableCameras.get(1).getSensorOrientation().intValue(), mockSensorOrientation2);
     assertEquals(
         availableCameras.get(1).getLensDirection(), Messages.PlatformCameraLensDirection.EXTERNAL);
+    assertEquals(
+        availableCameras.get(1).getLensType(), Messages.PlatformCameraLensType.UNKNOWN); // Assert lensType
   }
 
   @Test
@@ -170,5 +213,39 @@ public class CameraUtilsTest {
     assertEquals(CameraUtils.flashModeFromPigeon(Messages.PlatformFlashMode.OFF), FlashMode.off);
     assertEquals(
         CameraUtils.flashModeFromPigeon(Messages.PlatformFlashMode.TORCH), FlashMode.torch);
+  }
+
+  @Test
+  public void getLensType_mapsCorrectlyToPlatformCameraLensType() {
+    // Case: null focal lengths
+    CameraCharacteristics mockCharacteristics1 = mockCharacteristicsForLensType(null, new SizeF(4.8f, 3.6f));
+    assertEquals(CameraUtils.getLensType(mockCharacteristics1), Messages.PlatformCameraLensType.UNKNOWN);
+
+    // Case: empty focal lengths
+    CameraCharacteristics mockCharacteristics2 = mockCharacteristicsForLensType(new float[]{}, new SizeF(4.8f, 3.6f));
+    assertEquals(CameraUtils.getLensType(mockCharacteristics2), Messages.PlatformCameraLensType.UNKNOWN);
+
+    // Case: null sensor size
+    CameraCharacteristics mockCharacteristics3 = mockCharacteristicsForLensType(new float[]{4.5f}, null);
+    assertEquals(CameraUtils.getLensType(mockCharacteristics3), Messages.PlatformCameraLensType.UNKNOWN);
+
+    // Case: sensor size diagonal is 0
+    CameraCharacteristics mockCharacteristics4 = mockCharacteristicsForLensType(new float[]{4.5f}, new SizeF(0.0f, 0.0f));
+    assertEquals(CameraUtils.getLensType(mockCharacteristics4), Messages.PlatformCameraLensType.UNKNOWN);
+
+    // Case: ULTRA_WIDE (< 24mm equivalent)
+    // Diagonal = 6.0, Crop factor = 7.21, focal length = 3.0f -> 21.63mm equivalent
+    CameraCharacteristics mockCharacteristics5 = mockCharacteristicsForLensType(new float[]{3.0f}, new SizeF(4.8f, 3.6f));
+    assertEquals(CameraUtils.getLensType(mockCharacteristics5), Messages.PlatformCameraLensType.ULTRA_WIDE);
+
+    // Case: WIDE (>= 24mm and < 50mm equivalent)
+    // Diagonal = 6.0, Crop factor = 7.21, focal length = 4.5f -> 32.45mm equivalent
+    CameraCharacteristics mockCharacteristics6 = mockCharacteristicsForLensType(new float[]{4.5f}, new SizeF(4.8f, 3.6f));
+    assertEquals(CameraUtils.getLensType(mockCharacteristics6), Messages.PlatformCameraLensType.WIDE);
+
+    // Case: TELEPHOTO (>= 50mm equivalent)
+    // Diagonal = 6.0, Crop factor = 7.21, focal length = 8.0f -> 57.69mm equivalent
+    CameraCharacteristics mockCharacteristics7 = mockCharacteristicsForLensType(new float[]{8.0f}, new SizeF(4.8f, 3.6f));
+    assertEquals(CameraUtils.getLensType(mockCharacteristics7), Messages.PlatformCameraLensType.TELEPHOTO);
   }
 }
