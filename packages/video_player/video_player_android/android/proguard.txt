@@ -1,0 +1,4 @@
+# Keep Pigeon-generated classes and the plugin class.
+# This is needed because R8/ProGuard might strip them in release builds
+# due to Java/Kotlin interop and string-based MethodChannel communication.
+-keep class io.flutter.plugins.videoplayer.** { *; }
