@@ -1,3 +1,7 @@
+## 2.11.1
+
+* Fix release mode PlatformException (channel-error) by adding Proguard keep rules for Pigeon generated classes.
+
 ## 2.11.0
 
 * Adds `backBufferDurationMs` to `CreationOptions` to configure ExoPlayer `DefaultLoadControl` back buffer duration.
