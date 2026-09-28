@@ -196,6 +196,7 @@ public class GoogleSignInTest {
     when(mockGoogleCredential.getFamilyName()).thenReturn(familyName);
     when(mockGoogleCredential.getEmail()).thenReturn(email);
     when(mockGoogleCredential.getUniqueId()).thenReturn(uniqueId);
+    when(mockGoogleCredential.getId()).thenReturn(null);
     when(mockGoogleCredential.getIdToken()).thenReturn(idToken);
 
     final Boolean[] callbackCalled = new Boolean[1];
@@ -1240,7 +1241,22 @@ public class GoogleSignInTest {
   }
 
   @Test
-  public void getCredential_handlesMissingRequiredFields() {
+  public void getCredential_handlesMissingEmail() {
+    verifyMissingField("Jane User", "Jane", "User", null, "someAccountId", "idToken");
+  }
+
+  @Test
+  public void getCredential_handlesMissingUniqueId() {
+    verifyMissingField("Jane User", "Jane", "User", "jane@example.com", null, "idToken");
+  }
+
+  @Test
+  public void getCredential_handlesMissingIdToken() {
+    verifyMissingField("Jane User", "Jane", "User", "jane@example.com", "someAccountId", null);
+  }
+
+  @Test
+  public void getCredential_handlesMissingFieldsWithFallbackToId() {
     GetCredentialRequestParams params =
         new GetCredentialRequestParams(
             false,
@@ -1249,18 +1265,67 @@ public class GoogleSignInTest {
             null,
             null);
 
-    final String displayName = "Jane User";
-    final String givenName = "Jane";
-    final String familyName = "User";
-    final String email = null; // Simulating the bug (returning null from CredentialManager provider)
-    final String uniqueId = "someAccountId";
-    final String idToken = "idToken";
-    
+    when(mockGoogleCredential.getDisplayName()).thenReturn("Jane User");
+    when(mockGoogleCredential.getGivenName()).thenReturn("Jane");
+    when(mockGoogleCredential.getFamilyName()).thenReturn("User");
+    when(mockGoogleCredential.getEmail()).thenReturn(null);
+    when(mockGoogleCredential.getUniqueId()).thenReturn(null);
+    when(mockGoogleCredential.getId()).thenReturn("fallbackId");
+    when(mockGoogleCredential.getIdToken()).thenReturn("idToken");
+
+    final Boolean[] callbackCalled = new Boolean[1];
+    plugin.setActivity(mockActivity);
+    plugin.getCredential(
+        params,
+        ResultCompat.asCompatCallback(
+            reply -> {
+              callbackCalled[0] = true;
+              assertTrue(reply.isSuccess());
+              GetCredentialResult result = reply.getOrNull();
+              assertTrue(result instanceof GetCredentialSuccess);
+              GetCredentialSuccess success = (GetCredentialSuccess) result;
+
+              assertEquals("fallbackId", success.getCredential().getEmail());
+              assertEquals("fallbackId", success.getCredential().getUniqueId());
+              return null;
+            }));
+
+    @SuppressWarnings("unchecked")
+    ArgumentCaptor<CredentialManagerCallback<GetCredentialResponse, GetCredentialException>>
+        callbackCaptor = ArgumentCaptor.forClass(CredentialManagerCallback.class);
+    verify(mockCredentialManager)
+        .getCredentialAsync(
+            eq(mockActivity),
+            any(GetCredentialRequest.class),
+            any(),
+            any(),
+            callbackCaptor.capture());
+
+    callbackCaptor.getValue().onResult(new GetCredentialResponse(mockGenericCredential));
+    assertTrue("Callback must be called", callbackCalled[0]);
+  }
+
+  private void verifyMissingField(
+      String displayName,
+      String givenName,
+      String familyName,
+      String email,
+      String uniqueId,
+      String idToken) {
+    GetCredentialRequestParams params =
+        new GetCredentialRequestParams(
+            false,
+            new GetCredentialRequestGoogleIdOptionParams(false, false),
+            "serverClientId",
+            null,
+            null);
+
     when(mockGoogleCredential.getDisplayName()).thenReturn(displayName);
     when(mockGoogleCredential.getGivenName()).thenReturn(givenName);
     when(mockGoogleCredential.getFamilyName()).thenReturn(familyName);
     when(mockGoogleCredential.getEmail()).thenReturn(email);
     when(mockGoogleCredential.getUniqueId()).thenReturn(uniqueId);
+    when(mockGoogleCredential.getId()).thenReturn(null);
     when(mockGoogleCredential.getIdToken()).thenReturn(idToken);
 
     final Boolean[] callbackCalled = new Boolean[1];
@@ -1274,7 +1339,7 @@ public class GoogleSignInTest {
               GetCredentialResult result = reply.getOrNull();
               assertTrue(result instanceof GetCredentialFailure);
               GetCredentialFailure failure = (GetCredentialFailure) result;
-              
+
               assertEquals(GetCredentialFailureType.UNKNOWN, failure.getType());
               assertNotNull(failure.getMessage());
               return null;
