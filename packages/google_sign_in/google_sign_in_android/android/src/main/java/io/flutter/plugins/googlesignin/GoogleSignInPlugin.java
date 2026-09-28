@@ -279,6 +279,18 @@ public class GoogleSignInPlugin implements FlutterPlugin, ActivityAware {
                         .equals(GoogleIdTokenCredential.TYPE_GOOGLE_ID_TOKEN_CREDENTIAL)) {
                   GoogleIdTokenCredential googleIdTokenCredential =
                       credentialConverter.createFrom(credential);
+                  String email = googleIdTokenCredential.getEmail();
+                  String uniqueId = googleIdTokenCredential.getUniqueId();
+                  String idToken = googleIdTokenCredential.getIdToken();
+                  if (email == null || uniqueId == null || idToken == null) {
+                    ResultUtilsKt.completeWithValue(
+                        callback,
+                        new GetCredentialFailure(
+                            GetCredentialFailureType.UNKNOWN,
+                            "The Google sign-in response did not include a required field (email, uniqueId, or idToken).",
+                            null));
+                    return;
+                  }
                   Uri profilePictureUri = googleIdTokenCredential.getProfilePictureUri();
                   ResultUtilsKt.completeWithValue(
                       callback,
@@ -287,9 +299,9 @@ public class GoogleSignInPlugin implements FlutterPlugin, ActivityAware {
                               googleIdTokenCredential.getDisplayName(),
                               googleIdTokenCredential.getFamilyName(),
                               googleIdTokenCredential.getGivenName(),
-                              googleIdTokenCredential.getEmail(),
-                              googleIdTokenCredential.getUniqueId(),
-                              googleIdTokenCredential.getIdToken(),
+                              email,
+                              uniqueId,
+                              idToken,
                               profilePictureUri == null ? null : profilePictureUri.toString())));
                 } else {
                   ResultUtilsKt.completeWithValue(

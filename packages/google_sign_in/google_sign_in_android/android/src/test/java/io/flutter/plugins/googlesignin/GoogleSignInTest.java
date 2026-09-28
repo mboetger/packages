@@ -1239,6 +1239,62 @@ public class GoogleSignInTest {
     assertEquals(testToken, request.getToken());
   }
 
+  @Test
+  public void getCredential_handlesMissingRequiredFields() {
+    GetCredentialRequestParams params =
+        new GetCredentialRequestParams(
+            false,
+            new GetCredentialRequestGoogleIdOptionParams(false, false),
+            "serverClientId",
+            null,
+            null);
+
+    final String displayName = "Jane User";
+    final String givenName = "Jane";
+    final String familyName = "User";
+    final String email = null; // Simulating the bug (returning null from CredentialManager provider)
+    final String uniqueId = "someAccountId";
+    final String idToken = "idToken";
+    
+    when(mockGoogleCredential.getDisplayName()).thenReturn(displayName);
+    when(mockGoogleCredential.getGivenName()).thenReturn(givenName);
+    when(mockGoogleCredential.getFamilyName()).thenReturn(familyName);
+    when(mockGoogleCredential.getEmail()).thenReturn(email);
+    when(mockGoogleCredential.getUniqueId()).thenReturn(uniqueId);
+    when(mockGoogleCredential.getIdToken()).thenReturn(idToken);
+
+    final Boolean[] callbackCalled = new Boolean[1];
+    plugin.setActivity(mockActivity);
+    plugin.getCredential(
+        params,
+        ResultCompat.asCompatCallback(
+            reply -> {
+              callbackCalled[0] = true;
+              assertTrue(reply.isSuccess());
+              GetCredentialResult result = reply.getOrNull();
+              assertTrue(result instanceof GetCredentialFailure);
+              GetCredentialFailure failure = (GetCredentialFailure) result;
+              
+              assertEquals(GetCredentialFailureType.UNKNOWN, failure.getType());
+              assertNotNull(failure.getMessage());
+              return null;
+            }));
+
+    @SuppressWarnings("unchecked")
+    ArgumentCaptor<CredentialManagerCallback<GetCredentialResponse, GetCredentialException>>
+        callbackCaptor = ArgumentCaptor.forClass(CredentialManagerCallback.class);
+    verify(mockCredentialManager)
+        .getCredentialAsync(
+            eq(mockActivity),
+            any(GetCredentialRequest.class),
+            any(),
+            any(),
+            callbackCaptor.capture());
+
+    callbackCaptor.getValue().onResult(new GetCredentialResponse(mockGenericCredential));
+    assertTrue("Callback must be called", callbackCalled[0]);
+  }
+
   private AuthorizationResult mockSuccessAuthorizationResult(
       String serverAuthCode, String accessToken, List<String> scopes) {
     AuthorizationResult mockResult = mock(AuthorizationResult.class);

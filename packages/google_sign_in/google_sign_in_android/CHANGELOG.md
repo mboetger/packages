@@ -1,3 +1,7 @@
+## 7.2.18
+
+* Fixes NullPointerException when `GoogleIdTokenCredential` is missing `email`, `uniqueId`, or `idToken`.
+
 ## 7.2.17
 
 * Updates pigeon dev_dependency to ^27.3.2 for analyzer 14 compatibility.
