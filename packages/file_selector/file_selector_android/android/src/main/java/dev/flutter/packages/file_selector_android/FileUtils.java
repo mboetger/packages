@@ -131,7 +131,7 @@ public class FileUtils {
       }
       String uuid = UUID.nameUUIDFromBytes(uri.toString().getBytes()).toString();
       File targetDirectory = new File(context.getCacheDir(), uuid);
-      targetDirectory.mkdir();
+      targetDirectory.mkdirs();
       targetDirectory.deleteOnExit();
       String fileName = getFileName(context, uri);
       String extension = getFileExtension(context, uri);

@@ -111,7 +111,11 @@ public class FileSelectorApiImpl implements FileSelectorApi {
             @Override
             public void onResult(int resultCode, @Nullable Intent data) {
               if (resultCode == Activity.RESULT_OK && data != null) {
-                final Uri uri = data.getData();
+                Uri uri = data.getData();
+                if (uri == null && data.getClipData() != null && data.getClipData().getItemCount() > 0) {
+                  uri = data.getClipData().getItemAt(0).getUri();
+                }
+
                 if (uri == null) {
                   // No data retrieved from opening file.
                   ResultUtilsKt.<FileResponse>completeWithError(
@@ -160,18 +164,6 @@ public class FileSelectorApiImpl implements FileSelectorApi {
             @Override
             public void onResult(int resultCode, @Nullable Intent data) {
               if (resultCode == Activity.RESULT_OK && data != null) {
-                // Only one file was returned.
-                final Uri uri = data.getData();
-                if (uri != null) {
-                  final FileResponse file = toFileResponse(uri);
-                  if (file != null) {
-                    ResultUtilsKt.completeWithValue(callback, Collections.singletonList(file));
-                  } else {
-                    ResultUtilsKt.completeWithError(
-                        callback, new Exception("Failed to read file: " + uri));
-                  }
-                }
-
                 // Multiple files were returned.
                 final ClipData clipData = data.getClipData();
                 if (clipData != null) {
@@ -183,12 +175,27 @@ public class FileSelectorApiImpl implements FileSelectorApi {
                       files.add(file);
                     } else {
                       ResultUtilsKt.completeWithError(
-                          callback, new Exception("Failed to read file: " + uri));
+                          callback, new Exception("Failed to read file: " + clipItem.getUri()));
                       return;
                     }
                   }
                   ResultUtilsKt.completeWithValue(callback, files);
+                  return;
                 }
+
+                // Only one file was returned.
+                final Uri uri = data.getData();
+                if (uri != null) {
+                  final FileResponse file = toFileResponse(uri);
+                  if (file != null) {
+                    ResultUtilsKt.completeWithValue(callback, Collections.singletonList(file));
+                  } else {
+                    ResultUtilsKt.completeWithError(
+                        callback, new Exception("Failed to read file: " + uri));
+                  }
+                  return;
+                }
+                ResultUtilsKt.completeWithValue(callback, new ArrayList<>());
               } else {
                 ResultUtilsKt.completeWithValue(callback, new ArrayList<>());
               }

@@ -52,8 +52,8 @@ public class FileSelectorAndroidTest {
             });
   }
 
+  @Ignore("Flaky: https://github.com/flutter/flutter/issues/193234")
   @Test
-  @Ignore("Flaky; see https://github.com/flutter/flutter/issues/193234")
   public void openImageFile() {
     clearAnySystemDialog();
 
@@ -94,8 +94,8 @@ public class FileSelectorAndroidTest {
             });
   }
 
+  @Ignore("Flaky: https://github.com/flutter/flutter/issues/193234")
   @Test
-  @Ignore("Flaky; see https://github.com/flutter/flutter/issues/193234")
   public void openImageFiles() {
     clearAnySystemDialog();
 

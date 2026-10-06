@@ -211,6 +211,34 @@ public class FileUtilsTest {
     assertFalse(path.contains(".."));
   }
 
+  @Test
+  public void getPathFromCopyOfFileFromUri_succeedsIfCacheDirIsMissing() throws Exception {
+    Uri uri = MockContentProvider.PNG_URI;
+    Robolectric.buildContentProvider(MockContentProvider.class).create("dummy");
+    shadowContentResolver.registerInputStream(
+        uri, new ByteArrayInputStream("fileStream".getBytes(UTF_8)));
+
+    File cacheDir = context.getCacheDir();
+    deleteRecursively(cacheDir);
+
+    String path = FileUtils.getPathFromCopyOfFileFromUri(context, uri);
+    assertNotNull(path);
+  }
+
+  private void deleteRecursively(File fileOrDirectory) {
+    if (fileOrDirectory != null && fileOrDirectory.exists()) {
+      if (fileOrDirectory.isDirectory()) {
+        File[] children = fileOrDirectory.listFiles();
+        if (children != null) {
+          for (File child : children) {
+            deleteRecursively(child);
+          }
+        }
+      }
+      fileOrDirectory.delete();
+    }
+  }
+
   private static class MockContentProvider extends ContentProvider {
     public static final Uri TXT_URI = Uri.parse("content://dummy/dummydocument");
     public static final Uri PNG_URI = Uri.parse("content://dummy/a.b.png");
