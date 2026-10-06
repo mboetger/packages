@@ -28,7 +28,6 @@ import androidx.test.espresso.flutter.model.WidgetInfo;
 import androidx.test.espresso.intent.rule.IntentsRule;
 import androidx.test.ext.junit.rules.ActivityScenarioRule;
 import java.util.UUID;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -52,7 +51,6 @@ public class FileSelectorAndroidTest {
             });
   }
 
-  @Ignore("Flaky: https://github.com/flutter/flutter/issues/193234")
   @Test
   public void openImageFile() {
     clearAnySystemDialog();
@@ -94,7 +92,6 @@ public class FileSelectorAndroidTest {
             });
   }
 
-  @Ignore("Flaky: https://github.com/flutter/flutter/issues/193234")
   @Test
   public void openImageFiles() {
     clearAnySystemDialog();
