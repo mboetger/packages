@@ -1,3 +1,7 @@
+## 0.5.3+2
+
+* Populates `ProductDetailsResponse.error` in `queryProductDetails` when `BillingClient` returns a non-OK `BillingResult`.
+
 ## 0.5.3+1
 
 * Updates Robolectric to 4.17 and adds the JVM arguments it requires for unit tests.

@@ -221,6 +221,102 @@ void main() {
       expect(response.error!.message, 'error_message');
       expect(response.error!.details, <String, dynamic>{'info': 'error_info'});
     });
+
+    test(
+      'Issue 194177: should populate error when BillingResult is not OK but no exception is thrown',
+      () async {
+        when(mockApi.queryProductDetailsAsync(any)).thenAnswer(
+          (_) async => PlatformProductDetailsResponse(
+            billingResult: PlatformBillingResult(
+              responseCode: PlatformBillingResponse.developerError,
+              debugMessage: 'Developer error message',
+            ),
+            productDetails: <PlatformProductDetails>[],
+            unfetchedProductList: <PlatformUnfetchedProduct>[
+              PlatformUnfetchedProduct(productId: 'invalid'),
+            ],
+          ),
+        );
+
+        final ProductDetailsResponse response = await iapAndroidPlatform.queryProductDetails(
+          <String>{'invalid'},
+        );
+
+        expect(response.error, isNotNull);
+        expect(response.error!.code, kPurchaseErrorCode);
+        expect(response.error!.message, 'BillingResponse.developerError');
+        expect(response.error!.details, <String, dynamic>{
+          'debugMessage': 'Developer error message',
+          'unfetchedProductList': <String>['invalid'],
+        });
+      },
+    );
+
+    test('Issue 194177: should handle null/empty debugMessage and deduplicate correctly', () async {
+      when(mockApi.queryProductDetailsAsync(any)).thenAnswer(
+        (_) async => PlatformProductDetailsResponse(
+          billingResult: PlatformBillingResult(
+            responseCode: PlatformBillingResponse.developerError,
+            debugMessage: '', // Empty
+          ),
+          productDetails: <PlatformProductDetails>[],
+          unfetchedProductList: <PlatformUnfetchedProduct>[],
+        ),
+      );
+
+      final ProductDetailsResponse response = await iapAndroidPlatform.queryProductDetails(<String>{
+        'invalid',
+      });
+
+      expect(response.error, isNotNull);
+      expect(response.error!.code, kPurchaseErrorCode);
+      expect(response.error!.message, 'BillingResponse.developerError');
+      expect(response.error!.details, <String, dynamic>{
+        'debugMessage': '',
+        'unfetchedProductList': <String>[],
+      });
+    });
+
+    test('Issue 194177: should handle partial failure', () async {
+      var callCount = 0;
+      when(mockApi.queryProductDetailsAsync(any)).thenAnswer((Invocation invocation) async {
+        callCount++;
+        if (callCount == 1) {
+          return PlatformProductDetailsResponse(
+            billingResult: PlatformBillingResult(
+              responseCode: PlatformBillingResponse.ok,
+              debugMessage: '',
+            ),
+            productDetails: <PlatformProductDetails>[
+              convertToPigeonProductDetails(dummyOneTimeProductDetails),
+            ],
+            unfetchedProductList: <PlatformUnfetchedProduct>[],
+          );
+        } else {
+          return PlatformProductDetailsResponse(
+            billingResult: PlatformBillingResult(
+              responseCode: PlatformBillingResponse.developerError,
+              debugMessage: 'Failed to fetch subs',
+            ),
+            productDetails: <PlatformProductDetails>[],
+            unfetchedProductList: <PlatformUnfetchedProduct>[],
+          );
+        }
+      });
+
+      final ProductDetailsResponse response = await iapAndroidPlatform.queryProductDetails(<String>{
+        'invalid',
+      });
+
+      expect(response.productDetails.length, 1);
+      expect(response.error, isNotNull);
+      expect(response.error!.code, kPurchaseErrorCode);
+      expect(response.error!.message, 'BillingResponse.developerError');
+      expect(response.error!.details, <String, dynamic>{
+        'debugMessage': 'Failed to fetch subs',
+        'unfetchedProductList': <String>[],
+      });
+    });
   });
 
   group('restorePurchases', () {

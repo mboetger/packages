@@ -121,6 +121,48 @@ class InAppPurchaseAndroidPlatform extends InAppPurchasePlatform {
         ),
       ];
     }
+    final Set<String> errorCodeSet = productResponses
+        .where(
+          (ProductDetailsResponseWrapper response) => response.responseCode != BillingResponse.ok,
+        )
+        .map((ProductDetailsResponseWrapper response) => response.responseCode.toString())
+        .toSet();
+
+    final String errorMessage = errorCodeSet.isNotEmpty ? errorCodeSet.join(', ') : '';
+
+    final String errorDetails = productResponses
+        .where(
+          (ProductDetailsResponseWrapper response) => response.responseCode != BillingResponse.ok,
+        )
+        .map((ProductDetailsResponseWrapper response) => response.billingResult.debugMessage)
+        .where((String? message) => message != null && message.isNotEmpty)
+        .toSet()
+        .join(', ');
+
+    IAPError? error;
+    if (exception != null) {
+      error = IAPError(
+        source: kIAPSource,
+        code: exception.code,
+        message: exception.message ?? '',
+        details: exception.details,
+      );
+    } else if (errorMessage.isNotEmpty) {
+      error = IAPError(
+        source: kIAPSource,
+        code: kPurchaseErrorCode,
+        message: errorMessage,
+        details: <String, dynamic>{
+          'debugMessage': errorDetails,
+          'unfetchedProductList': productResponses
+              .expand((ProductDetailsResponseWrapper response) => response.unfetchedProductList)
+              .map((UnfetchedProductWrapper wrapper) => wrapper.productId)
+              .toSet()
+              .toList(),
+        },
+      );
+    }
+
     final List<ProductDetails> productDetailsList = productResponses
         .expand((ProductDetailsResponseWrapper response) {
           return response.productDetailsList;
@@ -137,14 +179,7 @@ class InAppPurchaseAndroidPlatform extends InAppPurchasePlatform {
     return ProductDetailsResponse(
       productDetails: productDetailsList,
       notFoundIDs: notFoundIDS,
-      error: exception == null
-          ? null
-          : IAPError(
-              source: kIAPSource,
-              code: exception.code,
-              message: exception.message ?? '',
-              details: exception.details,
-            ),
+      error: error,
     );
   }
 
