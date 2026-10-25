@@ -45,10 +45,14 @@ internal constructor(private val listEncoder: SharedPreferencesListEncoder) :
 
   override fun onAttachedToEngine(binding: FlutterPluginBinding) {
     setUp(binding.applicationContext)
+    registeredCount++
   }
 
   override fun onDetachedFromEngine(binding: FlutterPluginBinding) {
-    SharedPreferencesApiRegistrar().register(null)
+    registeredCount--
+    if (registeredCount == 0) {
+      SharedPreferencesApiRegistrar().register(null)
+    }
   }
 
   override suspend fun setBool(key: String, value: Boolean): Boolean =
@@ -183,5 +187,11 @@ internal constructor(private val listEncoder: SharedPreferencesListEncoder) :
 
   companion object {
     private const val BIG_INTEGER_PREFIX = "VGhpcyBpcyB0aGUgcHJlZml4IGZvciBCaWdJbnRlZ2Vy"
+    private var registeredCount = 0
+
+    @androidx.annotation.VisibleForTesting
+    internal fun clearRegisteredCount() {
+      registeredCount = 0
+    }
   }
 }

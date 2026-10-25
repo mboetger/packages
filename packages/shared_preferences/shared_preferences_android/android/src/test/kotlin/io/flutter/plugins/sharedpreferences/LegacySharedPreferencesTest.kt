@@ -39,6 +39,11 @@ class LegacySharedPreferencesTest {
     plugin.onAttachedToEngine(flutterPluginBinding)
   }
 
+  @org.junit.After
+  fun after() {
+    LegacySharedPreferencesPlugin.clearRegisteredCount()
+  }
+
   @Test
   fun getAll() = runBlocking {
     assertEquals(0, plugin.getAll("", null).size)

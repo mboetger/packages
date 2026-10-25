@@ -44,6 +44,12 @@ internal class SharedPreferencesTest {
 
   private val testList = JSON_LIST_PREFIX + listOf("foo", "bar").toString()
 
+  @org.junit.After
+  fun after() {
+    SharedPreferencesPlugin.clearRegisteredCount()
+    LegacySharedPreferencesPlugin.clearRegisteredCount()
+  }
+
   private val dataStoreOptions = SharedPreferencesPigeonOptions(useDataStore = true)
   private val sharedPreferencesOptions = SharedPreferencesPigeonOptions(useDataStore = false)
   private val testContext: Context = ApplicationProvider.getApplicationContext()

@@ -30,6 +30,12 @@ class MultipleEngineReproduceTest {
     Mockito.`when`(flutterPluginBinding2.applicationContext).thenReturn(context)
   }
 
+  @org.junit.After
+  fun after() {
+    LegacySharedPreferencesPlugin.clearRegisteredCount()
+    SharedPreferencesPlugin.clearRegisteredCount()
+  }
+
   @Test
   fun testDetachingSecondEngineClearsProcessWideMap() {
     // Start main engine and attach plugin
@@ -55,6 +61,15 @@ class MultipleEngineReproduceTest {
         "API should STILL be registered for main engine after background engine is detached",
         SharedPreferencesApiRegistrar()
             .getInstance("PigeonDefaultClassName32uh4ui3lh445uh4h3l2l455g4y34u"))
+
+    // Detach main engine
+    plugin1.onDetachedFromEngine(flutterPluginBinding1)
+
+    // Now it should be cleared
+    org.junit.Assert.assertNull(
+        "API should be cleared when last engine detaches",
+        SharedPreferencesApiRegistrar()
+            .getInstance("PigeonDefaultClassName32uh4ui3lh445uh4h3l2l455g4y34u"))
   }
 
   @Test
@@ -66,12 +81,10 @@ class MultipleEngineReproduceTest {
     // Verify main engine registered the APIs
     assertNotNull(
         "API should be registered for main engine (data_store)",
-        SharedPreferencesAsyncApiRegistrar()
-            .getInstance("data_store"))
+        SharedPreferencesAsyncApiRegistrar().getInstance("data_store"))
     assertNotNull(
         "API should be registered for main engine (shared_preferences)",
-        SharedPreferencesAsyncApiRegistrar()
-            .getInstance("shared_preferences"))
+        SharedPreferencesAsyncApiRegistrar().getInstance("shared_preferences"))
 
     // Start background engine and attach second plugin instance
     val plugin2 = SharedPreferencesPlugin()
@@ -83,11 +96,20 @@ class MultipleEngineReproduceTest {
     // The main engine API registration should NOT have been cleared.
     assertNotNull(
         "API should STILL be registered for main engine after background engine is detached (data_store)",
-        SharedPreferencesAsyncApiRegistrar()
-            .getInstance("data_store"))
+        SharedPreferencesAsyncApiRegistrar().getInstance("data_store"))
     assertNotNull(
         "API should STILL be registered for main engine after background engine is detached (shared_preferences)",
-        SharedPreferencesAsyncApiRegistrar()
-            .getInstance("shared_preferences"))
+        SharedPreferencesAsyncApiRegistrar().getInstance("shared_preferences"))
+
+    // Detach main engine
+    plugin1.onDetachedFromEngine(flutterPluginBinding1)
+
+    // Now it should be cleared
+    org.junit.Assert.assertNull(
+        "API should be cleared when last engine detaches (data_store)",
+        SharedPreferencesAsyncApiRegistrar().getInstance("data_store"))
+    org.junit.Assert.assertNull(
+        "API should be cleared when last engine detaches (shared_preferences)",
+        SharedPreferencesAsyncApiRegistrar().getInstance("shared_preferences"))
   }
 }

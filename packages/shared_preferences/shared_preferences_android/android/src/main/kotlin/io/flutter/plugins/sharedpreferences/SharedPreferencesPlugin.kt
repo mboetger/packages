@@ -42,6 +42,15 @@ const val DOUBLE_PREFIX = "VGhpcyBpcyB0aGUgcHJlZml4IGZvciBEb3VibGUu"
 
 /// SharedPreferencesPlugin
 class SharedPreferencesPlugin() : FlutterPlugin, SharedPreferencesAsyncApi {
+  companion object {
+    private var registeredCount = 0
+
+    @androidx.annotation.VisibleForTesting
+    internal fun clearRegisteredCount() {
+      registeredCount = 0
+    }
+  }
+
   private lateinit var context: Context
   private var backend: SharedPreferencesBackend? = null
   private var legacyPlugin: LegacySharedPreferencesPlugin? = null
@@ -66,12 +75,16 @@ class SharedPreferencesPlugin() : FlutterPlugin, SharedPreferencesAsyncApi {
 
   override fun onAttachedToEngine(binding: FlutterPlugin.FlutterPluginBinding) {
     setUp(binding.applicationContext)
+    registeredCount++
     legacyPlugin = LegacySharedPreferencesPlugin().also { it.onAttachedToEngine(binding) }
   }
 
   override fun onDetachedFromEngine(binding: FlutterPlugin.FlutterPluginBinding) {
-    SharedPreferencesAsyncApiRegistrar().register(null, "data_store")
-    backend?.tearDown()
+    registeredCount--
+    if (registeredCount == 0) {
+      SharedPreferencesAsyncApiRegistrar().register(null, "data_store")
+      SharedPreferencesAsyncApiRegistrar().register(null, "shared_preferences")
+    }
     backend = null
     legacyPlugin?.onDetachedFromEngine(binding)
     legacyPlugin = null
@@ -293,10 +306,6 @@ class SharedPreferencesBackend(
     } catch (ex: Exception) {
       Log.e(TAG, "Received exception while setting up SharedPreferencesBackend", ex)
     }
-  }
-
-  fun tearDown() {
-    SharedPreferencesAsyncApiRegistrar().register(null, "shared_preferences")
   }
 
   private fun createSharedPreferences(options: SharedPreferencesPigeonOptions): SharedPreferences {
