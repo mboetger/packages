@@ -1,5 +1,8 @@
 ## NEXT
 
+* Runs Android integration tests in release mode in `drive-examples` for
+  packages and examples that depend on `jni` to ensure R8 minification does not
+  break JNI calls.
 * Exempts `test_apps/` from requiring version and changelog changes.
 
 ## 0.14.4+4

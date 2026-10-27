@@ -263,6 +263,11 @@ class DriveExamplesCommand extends PackageLoopingCommand {
         if (!await _runTests(example, deviceFlags: deviceFlags, testFiles: testTargets)) {
           errors.add('Integration tests failed.');
         }
+        if (getBoolArg(platformAndroid) && (_dependsOnJni(package) || _dependsOnJni(example))) {
+          if (!await _runReleaseTests(example, deviceFlags: deviceFlags, testFiles: testTargets)) {
+            errors.add('Release mode integration tests failed.');
+          }
+        }
       }
     }
     if (!testsRan) {
@@ -470,5 +475,127 @@ class DriveExamplesCommand extends PackageLoopingCommand {
       passed = passed && (exitCode == 0);
     }
     return passed;
+  }
+
+  /// Returns true if [package] declares a dependency or dev_dependency on
+  /// `package:jni`.
+  bool _dependsOnJni(RepositoryPackage package) {
+    final Pubspec pubspec = package.parsePubspec();
+    return pubspec.dependencies.containsKey('jni') || pubspec.devDependencies.containsKey('jni');
+  }
+
+  /// Runs each file in [testFiles] in a release build on the target device,
+  /// returning true if all tests pass.
+  ///
+  /// Only release builds are minified with R8 on Android, which can strip or
+  /// rename classes and members referenced at runtime via `package:jni`.
+  /// Neither `flutter test` nor `flutter drive` supports release mode on
+  /// Android devices, so this runs each test file as the app's entrypoint with
+  /// `flutter run --release`. Without a test runner, `flutter_test` runs the
+  /// tests itself and prints a summary when they finish, which this waits for.
+  Future<bool> _runReleaseTests(
+    RepositoryPackage example, {
+    required List<String> deviceFlags,
+    required List<File> testFiles,
+  }) async {
+    final String enableExperiment = getStringArg(kEnableExperiment);
+    var passed = true;
+    for (final testFile in testFiles) {
+      final String target = getRelativePosixPath(testFile, from: example.directory);
+      final bool targetPassed = await _runReleaseTest(
+        example,
+        target: target,
+        deviceFlags: deviceFlags,
+        enableExperiment: enableExperiment,
+      );
+      passed = passed && targetPassed;
+    }
+    return passed;
+  }
+
+  Future<bool> _runReleaseTest(
+    RepositoryPackage example, {
+    required String target,
+    required List<String> deviceFlags,
+    required String enableExperiment,
+    Duration timeout = const Duration(minutes: 20),
+  }) async {
+    final args = <String>[
+      'run',
+      '--release',
+      ...deviceFlags,
+      if (enableExperiment.isNotEmpty) '--enable-experiment=$enableExperiment',
+      '--target',
+      target,
+    ];
+    print('Running command: "$flutterCommand ${args.join(' ')}" in ${example.directory.path}');
+    final Process process = await processRunner.start(
+      flutterCommand,
+      args,
+      workingDirectory: example.directory,
+    );
+
+    final result = Completer<bool>();
+    void checkForSummary(String line) {
+      print(line);
+      if (result.isCompleted) {
+        return;
+      }
+      if (line.contains('All tests passed!')) {
+        result.complete(true);
+      } else if (line.contains('Some tests failed.') || line.contains('All tests skipped.')) {
+        result.complete(false);
+      }
+    }
+
+    final doneFutures = <Future<void>>[];
+    final List<StreamSubscription<String>> subscriptions =
+        <Stream<List<int>>>[process.stdout, process.stderr].map((Stream<List<int>> output) {
+          final streamDone = Completer<void>();
+          doneFutures.add(streamDone.future);
+          return output
+              .transform(utf8.decoder)
+              .transform(const LineSplitter())
+              .listen(
+                checkForSummary,
+                onDone: () {
+                  if (!streamDone.isCompleted) {
+                    streamDone.complete();
+                  }
+                },
+              );
+        }).toList();
+    unawaited(
+      process.exitCode.then((int exitCode) async {
+        await Future.wait(
+          doneFutures,
+        ).timeout(const Duration(seconds: 1), onTimeout: () => <void>[]);
+        if (!result.isCompleted) {
+          print('flutter run exited with code $exitCode before the tests finished.');
+          result.complete(false);
+        }
+      }),
+    );
+
+    try {
+      return await result.future.timeout(
+        timeout,
+        onTimeout: () {
+          print('Timed out after $timeout waiting for the tests to finish.');
+          return false;
+        },
+      );
+    } finally {
+      // `flutter run` stays attached to the app until it's stopped.
+      process.kill();
+      await process.exitCode.timeout(
+        const Duration(minutes: 1),
+        onTimeout: () {
+          process.kill(ProcessSignal.sigkill);
+          return process.exitCode;
+        },
+      );
+      await Future.wait(subscriptions.map((StreamSubscription<String> s) => s.cancel()));
+    }
   }
 }

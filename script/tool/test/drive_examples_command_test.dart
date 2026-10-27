@@ -2,6 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io' as io;
 
@@ -1100,6 +1101,531 @@ void main() {
       );
     });
 
+    group('Android release mode tests for JNI', () {
+      void addJniDependency(RepositoryPackage package) {
+        final String pubspecContent = package.pubspecFile.readAsStringSync();
+        package.pubspecFile.writeAsStringSync(
+          pubspecContent.replaceFirst('dependencies:\n', 'dependencies:\n  jni: ^1.0.0\n'),
+        );
+      }
+
+      test('also runs integration tests in release mode when plugin depends on jni', () async {
+        final RepositoryPackage plugin = createFakePlugin(
+          'plugin',
+          packagesDir,
+          extraFiles: <String>[
+            'example/integration_test/first_test.dart',
+            'example/integration_test/second_test.dart',
+            'example/android/android.java',
+          ],
+          platformSupport: <String, PlatformDetails>{
+            platformAndroid: const PlatformDetails(PlatformSupport.inline),
+          },
+        );
+        addJniDependency(plugin);
+
+        final Directory pluginExampleDirectory = getExampleDir(plugin);
+
+        setMockFlutterDevicesOutput();
+        final firstReleaseProcess = _FakeFlutterRunProcess(stdout: '00:00 +1: All tests passed!\n');
+        final secondReleaseProcess = _FakeFlutterRunProcess(
+          stdout: '00:00 +1: All tests passed!\n',
+        );
+        processRunner.mockProcessesForExecutable[getFlutterCommand(mockPlatform)]!.addAll(
+          <FakeProcessInfo>[
+            FakeProcessInfo(MockProcess(), <String>['test']),
+            FakeProcessInfo(firstReleaseProcess, <String>['run', '--release']),
+            FakeProcessInfo(secondReleaseProcess, <String>['run', '--release']),
+          ],
+        );
+
+        final List<String> output = await runCapturingPrint(runner, <String>[
+          'drive-examples',
+          '--android',
+        ]);
+
+        expect(
+          output,
+          containsAllInOrder(<Matcher>[
+            contains('Running for plugin'),
+            contains('No issues found!'),
+          ]),
+        );
+
+        expect(firstReleaseProcess.killed, isTrue);
+        expect(secondReleaseProcess.killed, isTrue);
+
+        expect(
+          processRunner.recordedCalls,
+          orderedEquals(<ProcessCall>[
+            ProcessCall(getFlutterCommand(mockPlatform), const <String>[
+              'devices',
+              '--machine',
+            ], null),
+            ProcessCall(getFlutterCommand(mockPlatform), const <String>[
+              'test',
+              '-d',
+              _fakeAndroidDevice,
+              '--debug-logs-dir=/path/to/logs',
+              'integration_test',
+            ], pluginExampleDirectory.path),
+            ProcessCall(getFlutterCommand(mockPlatform), const <String>[
+              'run',
+              '--release',
+              '-d',
+              _fakeAndroidDevice,
+              '--target',
+              'integration_test/first_test.dart',
+            ], pluginExampleDirectory.path),
+            ProcessCall(getFlutterCommand(mockPlatform), const <String>[
+              'run',
+              '--release',
+              '-d',
+              _fakeAndroidDevice,
+              '--target',
+              'integration_test/second_test.dart',
+            ], pluginExampleDirectory.path),
+          ]),
+        );
+      });
+
+      test('also runs integration tests in release mode when example depends on jni', () async {
+        final RepositoryPackage plugin = createFakePlugin(
+          'plugin',
+          packagesDir,
+          extraFiles: <String>[
+            'example/integration_test/plugin_test.dart',
+            'example/android/android.java',
+          ],
+          platformSupport: <String, PlatformDetails>{
+            platformAndroid: const PlatformDetails(PlatformSupport.inline),
+          },
+        );
+        addJniDependency(plugin.getExamples().first);
+
+        final Directory pluginExampleDirectory = getExampleDir(plugin);
+
+        setMockFlutterDevicesOutput();
+        final releaseProcess = _FakeFlutterRunProcess(stdout: '00:00 +1: All tests passed!\n');
+        processRunner.mockProcessesForExecutable[getFlutterCommand(mockPlatform)]!.addAll(
+          <FakeProcessInfo>[
+            FakeProcessInfo(MockProcess(), <String>['test']),
+            FakeProcessInfo(releaseProcess, <String>['run', '--release']),
+          ],
+        );
+
+        final List<String> output = await runCapturingPrint(runner, <String>[
+          'drive-examples',
+          '--android',
+        ]);
+
+        expect(
+          output,
+          containsAllInOrder(<Matcher>[
+            contains('Running for plugin'),
+            contains('No issues found!'),
+          ]),
+        );
+
+        expect(releaseProcess.killed, isTrue);
+
+        expect(
+          processRunner.recordedCalls,
+          orderedEquals(<ProcessCall>[
+            ProcessCall(getFlutterCommand(mockPlatform), const <String>[
+              'devices',
+              '--machine',
+            ], null),
+            ProcessCall(getFlutterCommand(mockPlatform), const <String>[
+              'test',
+              '-d',
+              _fakeAndroidDevice,
+              '--debug-logs-dir=/path/to/logs',
+              'integration_test',
+            ], pluginExampleDirectory.path),
+            ProcessCall(getFlutterCommand(mockPlatform), const <String>[
+              'run',
+              '--release',
+              '-d',
+              _fakeAndroidDevice,
+              '--target',
+              'integration_test/plugin_test.dart',
+            ], pluginExampleDirectory.path),
+          ]),
+        );
+      });
+
+      test(
+        'does not run integration tests in release mode on non-Android platforms even when plugin depends on jni',
+        () async {
+          final RepositoryPackage plugin = createFakePlugin(
+            'plugin',
+            packagesDir,
+            extraFiles: <String>[
+              'example/integration_test/plugin_test.dart',
+              'example/android/android.java',
+              'example/ios/ios.m',
+            ],
+            platformSupport: <String, PlatformDetails>{
+              platformAndroid: const PlatformDetails(PlatformSupport.inline),
+              platformIOS: const PlatformDetails(PlatformSupport.inline),
+            },
+          );
+          addJniDependency(plugin);
+
+          final Directory pluginExampleDirectory = getExampleDir(plugin);
+
+          setMockFlutterDevicesOutput();
+          final List<String> output = await runCapturingPrint(runner, <String>[
+            'drive-examples',
+            '--ios',
+          ]);
+
+          expect(
+            output,
+            containsAllInOrder(<Matcher>[
+              contains('Running for plugin'),
+              contains('No issues found!'),
+            ]),
+          );
+
+          expect(
+            processRunner.recordedCalls,
+            orderedEquals(<ProcessCall>[
+              ProcessCall(getFlutterCommand(mockPlatform), const <String>[
+                'devices',
+                '--machine',
+              ], null),
+              ProcessCall(getFlutterCommand(mockPlatform), const <String>[
+                'test',
+                '-d',
+                _fakeIOSDevice,
+                '--debug-logs-dir=/path/to/logs',
+                'integration_test',
+              ], pluginExampleDirectory.path),
+            ]),
+          );
+        },
+      );
+
+      test('reports failure when release mode integration test fails', () async {
+        final RepositoryPackage plugin = createFakePlugin(
+          'plugin',
+          packagesDir,
+          extraFiles: <String>[
+            'example/integration_test/plugin_test.dart',
+            'example/android/android.java',
+          ],
+          platformSupport: <String, PlatformDetails>{
+            platformAndroid: const PlatformDetails(PlatformSupport.inline),
+          },
+        );
+        addJniDependency(plugin);
+
+        setMockFlutterDevicesOutput();
+        final releaseProcess = _FakeFlutterRunProcess(stdout: '00:00 +0 -1: Some tests failed.\n');
+        processRunner.mockProcessesForExecutable[getFlutterCommand(mockPlatform)]!.addAll(
+          <FakeProcessInfo>[
+            FakeProcessInfo(MockProcess(), <String>['test']),
+            FakeProcessInfo(releaseProcess, <String>['run', '--release']),
+          ],
+        );
+
+        Error? commandError;
+        final List<String> output = await runCapturingPrint(
+          runner,
+          <String>['drive-examples', '--android'],
+          errorHandler: (Error e) {
+            commandError = e;
+          },
+        );
+
+        expect(commandError, isA<ToolExit>());
+        expect(releaseProcess.killed, isTrue);
+        expect(
+          output,
+          containsAllInOrder(<Matcher>[
+            contains('Running for plugin'),
+            contains('The following packages had errors:'),
+            contains('  plugin:'),
+          ]),
+        );
+      });
+
+      test('reports failure when release mode integration test skips all tests', () async {
+        final RepositoryPackage plugin = createFakePlugin(
+          'plugin',
+          packagesDir,
+          extraFiles: <String>[
+            'example/integration_test/plugin_test.dart',
+            'example/android/android.java',
+          ],
+          platformSupport: <String, PlatformDetails>{
+            platformAndroid: const PlatformDetails(PlatformSupport.inline),
+          },
+        );
+        addJniDependency(plugin);
+
+        setMockFlutterDevicesOutput();
+        final releaseProcess = _FakeFlutterRunProcess(stdout: '00:00 ~1: All tests skipped.\n');
+        processRunner.mockProcessesForExecutable[getFlutterCommand(mockPlatform)]!.addAll(
+          <FakeProcessInfo>[
+            FakeProcessInfo(MockProcess(), <String>['test']),
+            FakeProcessInfo(releaseProcess, <String>['run', '--release']),
+          ],
+        );
+
+        Error? commandError;
+        final List<String> output = await runCapturingPrint(
+          runner,
+          <String>['drive-examples', '--android'],
+          errorHandler: (Error e) {
+            commandError = e;
+          },
+        );
+
+        expect(commandError, isA<ToolExit>());
+        expect(releaseProcess.killed, isTrue);
+        expect(
+          output,
+          containsAllInOrder(<Matcher>[
+            contains('Running for plugin'),
+            contains('The following packages had errors:'),
+            contains('  plugin:'),
+          ]),
+        );
+      });
+
+      test(
+        'reports failure when release mode integration test exits with code 0 before summary',
+        () async {
+          final RepositoryPackage plugin = createFakePlugin(
+            'plugin',
+            packagesDir,
+            extraFiles: <String>[
+              'example/integration_test/plugin_test.dart',
+              'example/android/android.java',
+            ],
+            platformSupport: <String, PlatformDetails>{
+              platformAndroid: const PlatformDetails(PlatformSupport.inline),
+            },
+          );
+          addJniDependency(plugin);
+
+          setMockFlutterDevicesOutput();
+          processRunner.mockProcessesForExecutable[getFlutterCommand(mockPlatform)]!.addAll(
+            <FakeProcessInfo>[
+              FakeProcessInfo(MockProcess(), <String>['test']),
+              FakeProcessInfo(
+                MockProcess(stdout: 'Lost connection to device.\n', stdoutEncoding: utf8),
+                <String>['run', '--release'],
+              ),
+            ],
+          );
+
+          Error? commandError;
+          final List<String> output = await runCapturingPrint(
+            runner,
+            <String>['drive-examples', '--android'],
+            errorHandler: (Error e) {
+              commandError = e;
+            },
+          );
+
+          expect(commandError, isA<ToolExit>());
+          expect(
+            output,
+            containsAllInOrder(<Matcher>[
+              contains('Running for plugin'),
+              contains('The following packages had errors:'),
+              contains('  plugin:'),
+            ]),
+          );
+        },
+      );
+
+      test(
+        'reports failure when release mode integration test exits with non-zero code before summary',
+        () async {
+          final RepositoryPackage plugin = createFakePlugin(
+            'plugin',
+            packagesDir,
+            extraFiles: <String>[
+              'example/integration_test/plugin_test.dart',
+              'example/android/android.java',
+            ],
+            platformSupport: <String, PlatformDetails>{
+              platformAndroid: const PlatformDetails(PlatformSupport.inline),
+            },
+          );
+          addJniDependency(plugin);
+
+          setMockFlutterDevicesOutput();
+          processRunner.mockProcessesForExecutable[getFlutterCommand(mockPlatform)]!.addAll(
+            <FakeProcessInfo>[
+              FakeProcessInfo(MockProcess(), <String>['test']),
+              FakeProcessInfo(
+                MockProcess(exitCode: 1, stdout: 'Gradle build failed\n', stdoutEncoding: utf8),
+                <String>['run', '--release'],
+              ),
+            ],
+          );
+
+          Error? commandError;
+          final List<String> output = await runCapturingPrint(
+            runner,
+            <String>['drive-examples', '--android'],
+            errorHandler: (Error e) {
+              commandError = e;
+            },
+          );
+
+          expect(commandError, isA<ToolExit>());
+          expect(
+            output,
+            containsAllInOrder(<Matcher>[
+              contains('Running for plugin'),
+              contains('The following packages had errors:'),
+              contains('  plugin:'),
+            ]),
+          );
+        },
+      );
+
+      test(
+        'also runs integration tests in release mode when example has dev_dependency on jni',
+        () async {
+          final RepositoryPackage plugin = createFakePlugin(
+            'plugin',
+            packagesDir,
+            extraFiles: <String>[
+              'example/integration_test/plugin_test.dart',
+              'example/android/android.java',
+            ],
+            platformSupport: <String, PlatformDetails>{
+              platformAndroid: const PlatformDetails(PlatformSupport.inline),
+            },
+          );
+          final RepositoryPackage example = plugin.getExamples().first;
+          example.pubspecFile.writeAsStringSync(
+            '${example.pubspecFile.readAsStringSync()}\ndev_dependencies:\n  jni: ^1.0.0\n',
+          );
+
+          final Directory pluginExampleDirectory = getExampleDir(plugin);
+
+          setMockFlutterDevicesOutput();
+          final releaseProcess = _FakeFlutterRunProcess(stdout: '00:00 +1: All tests passed!\n');
+          processRunner.mockProcessesForExecutable[getFlutterCommand(mockPlatform)]!.addAll(
+            <FakeProcessInfo>[
+              FakeProcessInfo(MockProcess(), <String>['test']),
+              FakeProcessInfo(releaseProcess, <String>['run', '--release']),
+            ],
+          );
+
+          final List<String> output = await runCapturingPrint(runner, <String>[
+            'drive-examples',
+            '--android',
+          ]);
+
+          expect(
+            output,
+            containsAllInOrder(<Matcher>[
+              contains('Running for plugin'),
+              contains('No issues found!'),
+            ]),
+          );
+
+          expect(releaseProcess.killed, isTrue);
+
+          expect(
+            processRunner.recordedCalls,
+            orderedEquals(<ProcessCall>[
+              ProcessCall(getFlutterCommand(mockPlatform), const <String>[
+                'devices',
+                '--machine',
+              ], null),
+              ProcessCall(getFlutterCommand(mockPlatform), const <String>[
+                'test',
+                '-d',
+                _fakeAndroidDevice,
+                '--debug-logs-dir=/path/to/logs',
+                'integration_test',
+              ], pluginExampleDirectory.path),
+              ProcessCall(getFlutterCommand(mockPlatform), const <String>[
+                'run',
+                '--release',
+                '-d',
+                _fakeAndroidDevice,
+                '--target',
+                'integration_test/plugin_test.dart',
+              ], pluginExampleDirectory.path),
+            ]),
+          );
+        },
+      );
+
+      test('forwards --enable-experiment flag to release mode integration tests', () async {
+        final RepositoryPackage plugin = createFakePlugin(
+          'plugin',
+          packagesDir,
+          extraFiles: <String>[
+            'example/integration_test/plugin_test.dart',
+            'example/android/android.java',
+          ],
+          platformSupport: <String, PlatformDetails>{
+            platformAndroid: const PlatformDetails(PlatformSupport.inline),
+          },
+        );
+        addJniDependency(plugin);
+
+        final Directory pluginExampleDirectory = getExampleDir(plugin);
+
+        setMockFlutterDevicesOutput();
+        final releaseProcess = _FakeFlutterRunProcess(stdout: '00:00 +1: All tests passed!\n');
+        processRunner.mockProcessesForExecutable[getFlutterCommand(mockPlatform)]!.addAll(
+          <FakeProcessInfo>[
+            FakeProcessInfo(MockProcess(), <String>['test']),
+            FakeProcessInfo(releaseProcess, <String>['run', '--release']),
+          ],
+        );
+
+        await runCapturingPrint(runner, <String>[
+          'drive-examples',
+          '--android',
+          '--enable-experiment=exp1',
+        ]);
+
+        expect(releaseProcess.killed, isTrue);
+
+        expect(
+          processRunner.recordedCalls,
+          orderedEquals(<ProcessCall>[
+            ProcessCall(getFlutterCommand(mockPlatform), const <String>[
+              'devices',
+              '--machine',
+            ], null),
+            ProcessCall(getFlutterCommand(mockPlatform), const <String>[
+              'test',
+              '-d',
+              _fakeAndroidDevice,
+              '--enable-experiment=exp1',
+              '--debug-logs-dir=/path/to/logs',
+              'integration_test',
+            ], pluginExampleDirectory.path),
+            ProcessCall(getFlutterCommand(mockPlatform), const <String>[
+              'run',
+              '--release',
+              '-d',
+              _fakeAndroidDevice,
+              '--enable-experiment=exp1',
+              '--target',
+              'integration_test/plugin_test.dart',
+            ], pluginExampleDirectory.path),
+          ]),
+        );
+      });
+    });
+
     test('driving when plugin does not support Android is no-op', () async {
       createFakePlugin(
         'plugin',
@@ -1828,5 +2354,47 @@ class _FakeDelayingProcess extends Fake implements io.Process {
   Future<int> get exitCode async {
     _fakeAsync.elapse(_delayDuration);
     return 0;
+  }
+}
+
+class _FakeFlutterRunProcess extends Fake implements io.Process {
+  /// Creates a mock `flutter run` process that emits [stdout] and [stderr]
+  /// and stays attached until [kill] is called.
+  _FakeFlutterRunProcess({String? stdout, String? stderr}) {
+    if (stdout != null) {
+      _stdoutController.add(utf8.encoder.convert(stdout));
+    }
+    if (stderr != null) {
+      _stderrController.add(utf8.encoder.convert(stderr));
+    }
+  }
+
+  final StreamController<List<int>> _stdoutController = StreamController<List<int>>();
+  final StreamController<List<int>> _stderrController = StreamController<List<int>>();
+  final Completer<int> _exitCodeCompleter = Completer<int>();
+
+  bool killed = false;
+
+  @override
+  int get pid => 99;
+
+  @override
+  Future<int> get exitCode => _exitCodeCompleter.future;
+
+  @override
+  Stream<List<int>> get stdout => _stdoutController.stream;
+
+  @override
+  Stream<List<int>> get stderr => _stderrController.stream;
+
+  @override
+  bool kill([io.ProcessSignal signal = io.ProcessSignal.sigterm]) {
+    killed = true;
+    if (!_exitCodeCompleter.isCompleted) {
+      _stdoutController.close();
+      _stderrController.close();
+      _exitCodeCompleter.complete(0);
+    }
+    return true;
   }
 }
